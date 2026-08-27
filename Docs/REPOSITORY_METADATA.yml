@@ -1,0 +1,33 @@
+project_name: Relational EX
+repository: laurorobles/Relational-EX
+product_name: Relational EX
+version: 0.3.2-dev
+status: experimental-development
+formats:
+  - VST3
+  - Standalone
+platform:
+  primary: macOS
+  ci_architecture: arm64-and-x86_64
+framework: JUCE
+language: C++17
+build_system: CMake
+public_scope:
+  core_domains:
+    - frequency
+    - rhythm
+    - spectrum
+    - motion
+    - relations
+  tuning:
+    - Scala SCL
+    - Scala KBM
+    - MIDI Tuning Standard
+    - MTS-ESP
+  sequence_views:
+    - Field
+    - Grid
+    - Radial
+  max_events: 32
+repository_remote: git@github.com:laurorobles/Relational-EX.git
+vst3_install_path: ~/Library/Audio/Plug-Ins/VST3/Relational EX.vst3

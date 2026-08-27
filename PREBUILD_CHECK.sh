@@ -1,22 +1,31 @@
 #!/bin/bash
 set -u
-cd "$(dirname "$0")"
-fail=0
-check(){ if eval "$2" >/dev/null 2>&1; then echo "[PASS] $1"; else echo "[FAIL] $1"; fail=1; fi; }
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+JUCE_ROOT="${JUCE_DIR:-$HOME/JUCE}"
+FAIL=0
 
-echo "=== RELATIONAL PREFLIGHT ==="
-check "macOS" 'test "$(uname -s)" = "Darwin"'
-check "AppleClang" 'command -v clang'
-check "CMake" 'command -v cmake'
-check "Xcode Command Line Tools" 'xcode-select -p'
-check "JUCE checkout" 'test -f "$HOME/JUCE/CMakeLists.txt"'
-check "Project CMakeLists" 'test -f CMakeLists.txt'
-check "JUCE header generation call" 'grep -q "juce_generate_juce_header(Relational)" CMakeLists.txt'
-check "VST3 user directory" 'mkdir -p "$HOME/Library/Audio/Plug-Ins/VST3"'
-check "Standalone format" 'grep -q "FORMATS VST3 Standalone" CMakeLists.txt'
-check "VST3 copy target" 'grep -q "VST3_COPY_DIR" CMakeLists.txt'
-check "Plugin editor implementation" 'grep -q "RelationalProcessor::createEditor" Source/PluginProcessor.cpp'
-check "Tooltip implementation" 'grep -q "SettableTooltipClient" Source/UI/TooltipSupport.h'
+pass(){ printf '  [OK] %s\n' "$1"; }
+fail(){ printf '  [FAIL] %s\n' "$1"; FAIL=1; }
 
-if [ "$fail" -ne 0 ]; then echo; echo "=== PREFLIGHT FAILED ==="; exit 1; fi
-echo; echo "=== PREFLIGHT PASSED ==="
+printf '\n=== RELATIONAL EX PREFLIGHT v0.3.2 ===\n\n'
+command -v cmake >/dev/null && pass "CMake found" || fail "CMake not found"
+command -v clang >/dev/null && pass "clang found" || fail "clang not found"
+command -v xcrun >/dev/null && xcrun --find clang >/dev/null 2>&1 && pass "Apple Clang toolchain" || fail "Xcode Command Line Tools"
+[ -f "$JUCE_ROOT/CMakeLists.txt" ] && pass "JUCE at $JUCE_ROOT" || fail "JUCE not found at $JUCE_ROOT"
+[ -f "$ROOT/CMakeLists.txt" ] && pass "Project CMakeLists" || fail "Project CMakeLists missing"
+[ -f "$ROOT/Source/PluginProcessor.cpp" ] && pass "Processor source" || fail "Processor source missing"
+[ -f "$ROOT/Source/PluginEditor.cpp" ] && pass "Editor source" || fail "Editor source missing"
+[ -d "$HOME/Library/Audio/Plug-Ins/VST3" ] || mkdir -p "$HOME/Library/Audio/Plug-Ins/VST3"
+[ -d "$HOME/Library/Audio/Plug-Ins/VST3" ] && pass "User VST3 directory" || fail "Cannot create user VST3 directory"
+
+if [ "$FAIL" -eq 0 ]; then
+  rm -rf "$ROOT/build"
+  cmake -S "$ROOT" -B "$ROOT/build" -DCMAKE_BUILD_TYPE=Release >/tmp/relational_cmake.log 2>&1 || { cat /tmp/relational_cmake.log; fail "CMake configure"; }
+fi
+
+if [ "$FAIL" -eq 0 ]; then
+  printf '\n=== PREFLIGHT PASSED ===\nSafe to run: ./build_and_install.sh\n\n'
+else
+  printf '\n=== PREFLIGHT FAILED ===\nFix the failed checks before building.\n\n'
+fi
+exit "$FAIL"

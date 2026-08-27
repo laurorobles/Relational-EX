@@ -1,28 +1,39 @@
-# RELATIONAL — Implementation Status
+# Implementation Status
 
-## Implemented in prototype
+## Implemented / development-ready
 
-- VST3 and Standalone CMake targets.
-- Interactive Frequency Field editing prototype.
-- Interactive Relational Sequencer event-field prototype.
-- 2-operator FM oscillator with continuous ratio.
-- First-class tuning model.
-- Scala `.scl` parser.
-- Local MIDI Tuning Standard table + SysEx handling foundation.
-- Dynamic MTS-ESP client bridge architecture.
-- English hover-help policy wired into prototype controls.
+- Relational EX public product name and JUCE metadata.
+- VST3 + Standalone CMake targets.
+- 8-voice FM engine.
+- Inharmonic six-mode resonator.
+- Tuning snapshot with double buffering for realtime-safe reads.
+- Interactive tuning field.
+- Relational event model and double-buffered sequencer snapshot.
+- Euclidean pattern generation.
+- Factory exploration presets.
+- Scala `.scl` import.
+- Initial KBM parser.
+- MTS SysEx local parser for supported Single Note Tuning Change.
+- MTS-ESP bridge with dynamic loading and optional operation.
+- LFO and deterministic chaos modulation primitives.
+- Relational Engine with pitch/time/FM/resonance/tuning coupling in the audio path.
+- Explicit lfoRate, lfoAmount, chaosAmount and relationDepth APVTS parameters.
+- English contextual hover help.
+- macOS VST3 installation workflow.
+- GitHub Actions macOS ARM64 build workflow.
 
-## Important limitation
+## Partial
 
-The current `MIDI Tuning Standard` parser intentionally starts with the real-time Single Note Tuning Change path and establishes the local tuning-table architecture. Full updated MTS variants (banked bulk dumps and scale/octave 1-byte/2-byte messages) still need conformance tests against the official MMA specification before shipping.
+- Full KBM semantics and validation.
+- Complete MTS local message family coverage beyond the implemented subset.
+- MTS-ESP validation against an installed current `libMTS.dylib` on the developer Mac.
+- Full multi-lane polyrhythmic sequencer UI.
+- User-editable modulation/relationship matrix UI.
+- Preset browser search/tagging.
+- Distribution signing/notarization.
+- Complete multi-lane polymetric UI, event timing-offset playback, and user-editable relationship-matrix routing.
+- Event timingOffset is stored and visualized but is not yet applied as sample-accurate scheduling.
 
-The MTS-ESP bridge dynamically loads the installed ODDSound library rather than bundling its client source in this snapshot. This avoids making network/download availability part of the build. The official client API supports real-time retuning, local MTS SysEx fallback and multi-channel tuning. See the project decision log for the production plan.
+## Next
 
-## Next implementation slice
-
-1. Harden MTS parser with test vectors.
-2. Complete MTS-ESP client querying, including multi-channel/MPE policy.
-3. Finish Scala KBM mapping.
-4. Add local scale database index/cache and background synchronization.
-5. Turn Wilson-inspired tuning geometry into the editable Frequency Field.
-6. Make the sequencer event model APVTS/state-tree backed so UI edits are automatable and undoable.
+The next development milestone should deepen the existing relational architecture rather than broaden into a generic synthesizer: complete the tuning field model, multi-lane relational sequencing, modulation routing, database browser and MTS validation.

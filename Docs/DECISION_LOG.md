@@ -1,26 +1,41 @@
-# RELATIONAL Decision Log
+# Relational EX — Decision Log
 
-## 2026-08-26 — v0.1.9 candidate
+## 2026-08-26 — Product concept
 
-### Build strategy
-The project must pass a preflight check before compilation. The build script must produce both VST3 and Standalone and install the VST3 into the per-user macOS VST3 folder.
+The instrument is defined as a relational synthesizer: frequency, rhythm, spectrum and motion are first-class interacting systems.
 
-### MTS-ESP strategy
-MTS-ESP is a compatibility layer, not a dependency of the core DSP. The bridge dynamically loads the official client API and safely falls back to the local tuning engine when no MTS-ESP library/master is present.
+## 2026-08-26 — Microtuning
 
-### UI direction
-The interface should feel like an instrument for manipulating relationships between frequency, spectrum, rhythm and motion rather than a conventional subtractive synth. Inspiration may come from experimental modular/digital instruments and microtonal visualization, but no visual clone of Autechre, Aphex Twin, Wilsonic or a specific hardware product is intended.
+Microtuning is part of the synthesis architecture, not a secondary MIDI feature.
 
-### Sequencer
-The sequencer remains interactive. Future views will share the same event data: Grid, Field and Radial.
+## 2026-08-26 — Wilsonic
 
-## 2026-08-26 — v0.1.9 build-hardening
+Wilsonic is a conceptual/technical reference for tuning visualization, not a runtime dependency.
 
-### Linker fix
-Implemented `RelationalProcessor::createEditor()` in `PluginProcessor.cpp`, resolving the Standalone and VST3 linker failure caused by the declared-but-undefined virtual override.
+## 2026-08-26 — MTS
 
-### VST3 installation
-The CMake target explicitly uses the per-user macOS VST3 destination `~/Library/Audio/Plug-Ins/VST3`; the build script also verifies and copies the final bundle.
+Support MTS-ESP, MIDI Tuning Standard and Scala, with local fallbacks and no network dependency in the audio path.
 
-### MTS-ESP
-The bridge was changed from a misleading placeholder client ABI to a guarded dynamic interface with the installed libMTS tuning-table symbols. Full official `libMTSClient` source integration remains a planned conformance step.
+## 2026-08-26 — Sequencer
+
+Events are relational objects. Field, Grid and Radial are views onto the same event model.
+
+## 2026-08-26 — UI
+
+Every interactive control gets English hover help. The interface uses bounded functional modules and a strict spacing/alignment system.
+
+## 2026-08-27 — Realtime safety
+
+Tuning and sequencer snapshots use double buffering instead of a C++ seqlock over non-atomic objects. This avoids a data race in which the audio thread could read while the UI writes.
+
+## 2026-08-27 — GitHub
+
+Repository name and public plugin identity are `Relational EX`. Synchronization tooling never force-pushes and stops on divergent remote history.
+
+## 2026-08-27 — Relational Engine enters the audio path
+
+Decision: implement a bounded five-domain relationship model before adding more synthesis modules.
+
+Rationale: the product thesis depends on relationships between pitch, time, spectrum and tuning. A small coupling model makes that concept operational without turning the plugin into a generic modulation matrix.
+
+Constraints: deterministic, bounded, allocation-free in the audio callback, sparse defaults, and documented as development behavior until the relationship UI is finalized.

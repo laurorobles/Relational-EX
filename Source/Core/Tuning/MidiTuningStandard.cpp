@@ -10,6 +10,7 @@ void MidiTuningStandard::reset12TET(double a4)
     for (int n = 0; n < 128; ++n)
         frequencies_[static_cast<size_t>(n)] = a4 * std::pow(2.0, (n - 69) / 12.0);
     dirty_ = true;
+    hasTuning_ = false;
 }
 
 bool MidiTuningStandard::parseSysEx(const uint8_t* d, size_t size)
@@ -38,6 +39,7 @@ bool MidiTuningStandard::parseSysEx(const uint8_t* d, size_t size)
             frequencies_[static_cast<size_t>(note)] = 440.0 * std::pow(2.0, ((note - 69) + semitoneFraction) / 12.0);
         }
         dirty_ = true;
+        hasTuning_ = true;
         return true;
     }
 

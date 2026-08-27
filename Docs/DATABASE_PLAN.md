@@ -1,39 +1,58 @@
-# Scale Database & Connectivity Plan
+# Relational EX — Scale Database Plan
 
-## Design
+## Goal
 
-RELATIONAL ships with a small curated offline core and can maintain a larger local cache.
+Provide a searchable local catalogue of tuning systems without making the audio engine depend on internet access.
 
-## Candidate sources
+## Sources
 
-1. Scala archive / Huygens-Fokker ecosystem
-2. narenratan/scale-library metadata + .scl files
-3. User-provided .scl/.kbm/.tun files
-4. Optional Wilsonic tuning exports / generated .scl files
+Primary interchange format: Scala `.scl`.
+Optional mapping format: `.kbm`.
+Research sources may include public scale collections such as `narenratan/scale-library`.
 
-## Synchronization behavior
+## Runtime architecture
 
-- User initiates `Sync Scale Library` from the UI.
-- Background thread performs download/update.
-- Download is written to a temporary file.
-- Validate checksum/format.
-- Update local index atomically.
-- Notify UI.
-- Audio engine uses the previously loaded snapshot until the user selects the new tuning.
+```text
+External source
+      ↓
+Sync tool (non-realtime)
+      ↓
+Local catalogue
+      ↓
+Metadata index
+      ↓
+Tuning Browser
+      ↓
+TuningSystem
+      ↓
+Realtime frequency snapshot
+```
 
-## Metadata
+## Rules
 
-Each scale record should retain:
-- source URL
-- author/source attribution when present
-- filename
-- description
-- tone count
+- Never perform network access from the audio thread.
+- Never parse a large scale collection on the audio thread.
+- Treat third-party scale files as content with provenance and licensing metadata.
+- Keep the plugin usable offline.
+- Cache imported files locally.
+
+## Planned metadata
+
+- display name
+- file path / source URL
+- source collection
+- author where provided
 - period ratio
+- number of degrees
+- interval representation
 - tags
-- local file hash
-- retrieval date
+- license/provenance note
+- import date
 
-## Commercial distribution
+## Synchronization
 
-Third-party data licensing must be audited before bundling archives into a commercial installer. Network access is preferable for large optional catalogs when licensing permits.
+`Tools/sync_scale_library.sh` is a development tool. It should populate a local scale directory only after the user understands the source's redistribution terms.
+
+## Future database options
+
+The first implementation can remain filesystem/index based. SQLite becomes justified when search facets, aliases, ratings, user collections and tens of thousands of entries materially improve the workflow.

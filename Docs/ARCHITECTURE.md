@@ -1,65 +1,51 @@
-# RELATIONAL — Technical Architecture v0.1
+# Relational EX — Architecture
 
-## Layering
+## Layers
 
-`UI -> Model/State -> DSP`
+```text
+Host / Standalone
+        ↓
+PluginProcessor / PluginEditor
+        ↓
+Application state + APVTS
+        ↓
+Relational control model
+        ↓
+Tuning / Sequencer / Modulation
+        ↓
+Voice / FM / Resonator
+        ↓
+Audio output
+```
 
-The editor can disappear. The processor remains valid and owns persistent state.
+## Core rule
 
-## Tuning pipeline
+Realtime DSP must never depend on UI-owned mutable containers or filesystem operations.
 
-MIDI note -> local/MTS-ESP/MTS SysEx resolution -> tuning ratio -> frequency -> oscillator
+## Tuning
 
-The tuning engine must support:
-- 12-TET
-- N-TET
-- ratio-based scales
-- Scala SCL/KBM
-- arbitrary user-defined frequency/ratio fields
-- interpolation between tuning systems
-- per-event cent offsets
-- continuous retuning while notes sustain
+UI-side tuning edits modify the edit model, then publish an immutable 128-note frequency snapshot by atomically switching between two completed buffers.
 
-## Spectrum pipeline
+## Sequencer
 
-Source -> oscillator/FM -> partial/resonator layer -> modulation -> output
+UI-side event edits modify the edit vector, then publish a complete event-array snapshot through the same double-buffer pattern.
 
-FM is ratio-centric. Ratios are represented as continuous doubles and are not restricted to integer harmonic relationships.
+## MTS
 
-## Sequencer model
+MTS-ESP is isolated behind `MTSClientBridge`. When present, it can override local pitch resolution. Without an MTS-ESP master, internal Relational tuning remains the main source; a valid local MTS SysEx table can override it when present.
 
-A sequencer event is not a note-only object. It contains:
-- position
-- pitch
-- ratio
-- duration
-- velocity
-- probability
-- FM index
-- tuning offset
-- timing offset
+## Presets
 
-Different tracks may use different cycle lengths to create polymetric relationships.
+Factory presets are code-defined development assets. Host state serialization is separate from the conceptual preset catalogue.
 
-## Database/cache architecture
+## Database
 
-UI/background service -> HTTP repository -> local metadata/index/cache -> tuning engine
+Scale discovery and synchronization are non-realtime operations. Runtime lookup is local.
 
-Never:
-- perform network I/O inside `processBlock`
-- parse a large scale archive inside `processBlock`
-- block audio waiting for a tuning download
+## UI
 
-The audio thread consumes immutable/local snapshots.
+Components consume snapshots or UI-safe models. They do not directly mutate realtime state without an explicit publish/commit boundary.
 
-## Dependencies
+## Relation Engine
 
-Required:
-- JUCE
-
-Optional ecosystem integration:
-- ODDSound MTS-ESP client library
-
-Reference/inspiration:
-- Wilsonic-MTS-ESP source and tuning visualizations
-- Scala format and scale archives
+The Relation Engine is a bounded five-domain coupling stage between control interpretation and voice rendering. It consumes normalized pitch/time/FM/resonance/tuning states and returns bounded coupled values. It contains no filesystem, UI or allocation work on the realtime path.

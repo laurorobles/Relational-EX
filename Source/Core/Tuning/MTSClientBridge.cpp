@@ -1,5 +1,6 @@
 #include "MTSClientBridge.h"
 #include <cmath>
+#include <algorithm>
 
 #if defined(_WIN32)
  #include <windows.h>
@@ -11,31 +12,28 @@ namespace rel {
 namespace {
 
 template <typename Fn>
-Fn loadSymbol(void* library, const char* name)
+Fn loadSymbol(void* library, const char* name) noexcept
 {
 #if defined(_WIN32)
-    return reinterpret_cast<Fn>(GetProcAddress(reinterpret_cast<HMODULE>(library), name));
+    return library ? reinterpret_cast<Fn>(GetProcAddress(reinterpret_cast<HMODULE>(library), name)) : nullptr;
 #else
-    return reinterpret_cast<Fn>(dlsym(library, name));
+    return library ? reinterpret_cast<Fn>(dlsym(library, name)) : nullptr;
 #endif
 }
 
-void* openMTSLibrary()
+void* openLibrary()
 {
 #if defined(_WIN32)
     return reinterpret_cast<void*>(LoadLibraryA("MTS-ESP.dll"));
 #else
-    if (auto* h = dlopen("/Library/Application Support/MTS-ESP/libMTS.dylib", RTLD_NOW | RTLD_LOCAL))
-        return h;
-    if (auto* h = dlopen("/usr/local/lib/libMTS.dylib", RTLD_NOW | RTLD_LOCAL))
-        return h;
-    if (auto* h = dlopen("/usr/local/lib/libMTS.so", RTLD_NOW | RTLD_LOCAL))
-        return h;
+    if (auto* h = dlopen("/Library/Application Support/MTS-ESP/libMTS.dylib", RTLD_NOW | RTLD_LOCAL)) return h;
+    if (auto* h = dlopen("/usr/local/lib/libMTS.dylib", RTLD_NOW | RTLD_LOCAL)) return h;
+    if (auto* h = dlopen("/usr/local/lib/libMTS.so", RTLD_NOW | RTLD_LOCAL)) return h;
     return nullptr;
 #endif
 }
 
-void closeMTSLibrary(void* library)
+void closeLibrary(void* library)
 {
 #if defined(_WIN32)
     if (library) FreeLibrary(reinterpret_cast<HMODULE>(library));
@@ -44,92 +42,100 @@ void closeMTSLibrary(void* library)
 #endif
 }
 
-double midi12TetFrequency(int midiNote) noexcept
+double fallbackFrequency(int midiNote) noexcept
 {
     return 440.0 * std::pow(2.0, (static_cast<double>(midiNote) - 69.0) / 12.0);
 }
 
 } // namespace
 
-MTSClientBridge::MTSClientBridge()
-    : library_(openMTSLibrary())
+MTSClientBridge::MTSClientBridge() : library_(openLibrary())
 {
-    if (library_)
-        loadSymbols();
+    if (library_) loadSymbols();
 }
 
 MTSClientBridge::~MTSClientBridge()
 {
     deregisterClient();
-    closeMTSLibrary(library_);
+    closeLibrary(library_);
 }
 
 void MTSClientBridge::loadSymbols() noexcept
 {
+    registerFn_ = loadSymbol<RegisterFn>(library_, "MTS_RegisterClient");
+    deregisterFn_ = loadSymbol<DeregisterFn>(library_, "MTS_DeregisterClient");
     hasMasterFn_ = loadSymbol<HasMasterFn>(library_, "MTS_HasMaster");
-    getTuningTableFn_ = loadSymbol<GetTuningTableFn>(library_, "MTS_GetTuningTable");
-    getMultiChannelTuningTableFn_ = loadSymbol<GetMultiChannelTuningTableFn>(library_, "MTS_GetMultiChannelTuningTable");
-    useMultiChannelTuningFn_ = loadSymbol<UseMultiChannelTuningFn>(library_, "MTS_UseMultiChannelTuning");
+    shouldFilterNoteFn_ = loadSymbol<ShouldFilterNoteFn>(library_, "MTS_ShouldFilterNote");
+    noteFrequencyFn_ = loadSymbol<NoteFrequencyFn>(library_, "MTS_NoteToFrequency");
     getScaleNameFn_ = loadSymbol<GetScaleNameFn>(library_, "MTS_GetScaleName");
     getPeriodRatioFn_ = loadSymbol<GetPeriodRatioFn>(library_, "MTS_GetPeriodRatio");
+    parseMIDIDataFn_ = loadSymbol<ParseMIDIDataFn>(library_, "MTS_ParseMIDIDataU");
+    hasReceivedSysExFn_ = loadSymbol<HasReceivedSysExFn>(library_, "MTS_HasReceivedMTSSysEx");
+    shouldUpdateLibraryFn_ = loadSymbol<ShouldUpdateLibraryFn>(library_, "MTS_Client_ShouldUpdateLibrary");
 }
 
 void MTSClientBridge::registerClient() noexcept
 {
-    // The installed libMTS library owns global master/client state. The official
-    // client wrapper registers a per-plugin object; our bridge intentionally keeps
-    // that ABI detail isolated. No registration call is needed for table queries.
+    if (!client_ && available()) client_ = registerFn_();
 }
 
-void MTSClientBridge::deregisterClient() noexcept {}
+void MTSClientBridge::deregisterClient() noexcept
+{
+    if (client_ && deregisterFn_) {
+        deregisterFn_(client_);
+        client_ = nullptr;
+    }
+}
 
 bool MTSClientBridge::hasMaster() const noexcept
 {
-    return library_ && hasMasterFn_ ? hasMasterFn_() : false;
+    return client_ && hasMasterFn_ ? hasMasterFn_(client_) : false;
 }
 
-const double* MTSClientBridge::tuningTableForChannel(int midiChannel) const noexcept
+bool MTSClientBridge::shouldFilterNote(int midiNote, int midiChannel) const noexcept
 {
-    if (!library_)
-        return nullptr;
-
-    if (midiChannel >= 0 && midiChannel < 16 && useMultiChannelTuningFn_
-        && useMultiChannelTuningFn_(static_cast<signed char>(midiChannel))
-        && getMultiChannelTuningTableFn_)
-        return getMultiChannelTuningTableFn_(static_cast<signed char>(midiChannel));
-
-    return getTuningTableFn_ ? getTuningTableFn_() : nullptr;
+    if (!client_ || !shouldFilterNoteFn_ || midiNote < 0 || midiNote > 127) return false;
+    const signed char ch = static_cast<signed char>(std::clamp(midiChannel, -1, 15));
+    return shouldFilterNoteFn_(client_, static_cast<char>(midiNote), ch);
 }
 
 double MTSClientBridge::noteFrequency(int midiNote, int midiChannel) const noexcept
 {
-    if (midiNote < 0 || midiNote > 127)
-        return 440.0;
+    if (!client_ || !noteFrequencyFn_ || midiNote < 0 || midiNote > 127) return fallbackFrequency(midiNote);
+    const signed char ch = static_cast<signed char>(std::clamp(midiChannel, -1, 15));
+    const double hz = noteFrequencyFn_(client_, static_cast<char>(midiNote), ch);
+    return std::isfinite(hz) && hz > 0.0 ? hz : fallbackFrequency(midiNote);
+}
 
-    const double* table = tuningTableForChannel(midiChannel);
-    if (table)
-    {
-        // libMTS exposes inverse frequency values for the tuning table.
-        const double inverseFrequency = table[midiNote];
-        if (inverseFrequency > 0.0 && std::isfinite(inverseFrequency))
-            return 1.0 / inverseFrequency;
-    }
+void MTSClientBridge::parseMidiData(const unsigned char* data, int size) noexcept
+{
+    if (client_ && parseMIDIDataFn_ && data && size > 0) parseMIDIDataFn_(client_, data, size);
+}
 
-    return midi12TetFrequency(midiNote);
+bool MTSClientBridge::hasReceivedMTSSysEx() const noexcept
+{
+    return client_ && hasReceivedSysExFn_ ? hasReceivedSysExFn_(client_) : false;
+}
+
+bool MTSClientBridge::shouldUpdateLibrary() const noexcept
+{
+    return client_ && shouldUpdateLibraryFn_ ? shouldUpdateLibraryFn_(client_) : false;
 }
 
 const char* MTSClientBridge::scaleName() const noexcept
 {
-    if (getScaleNameFn_)
-        if (const auto* name = getScaleNameFn_())
-            return name;
-    return "12-TET";
+    if (client_ && getScaleNameFn_) {
+        if (const auto* name = getScaleNameFn_(client_)) return name;
+    }
+    return "Internal Tuning";
 }
 
 double MTSClientBridge::periodRatio() const noexcept
 {
-    if (getPeriodRatioFn_)
-        return getPeriodRatioFn_();
+    if (client_ && getPeriodRatioFn_) {
+        const double ratio = getPeriodRatioFn_(client_);
+        if (std::isfinite(ratio) && ratio > 1.0) return ratio;
+    }
     return 2.0;
 }
 
