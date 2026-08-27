@@ -1,0 +1,11 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/babyonk1/Desktop/ExtasisRecords/RELATIONAL-Prototype/build/cmake_install.cmake",
+		"/Users/babyonk1/Desktop/ExtasisRecords/RELATIONAL-Prototype/build/JUCE/cmake_install.cmake",
+		"/Users/babyonk1/Desktop/ExtasisRecords/RELATIONAL-Prototype/build/JUCE/modules/cmake_install.cmake",
+		"/Users/babyonk1/Desktop/ExtasisRecords/RELATIONAL-Prototype/build/JUCE/extras/Build/cmake_install.cmake",
+		"/Users/babyonk1/Desktop/ExtasisRecords/RELATIONAL-Prototype/build/JUCE/extras/Build/juceaide/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -1,0 +1,3 @@
+/Users/babyonk1/Desktop/ExtasisRecords/RELATIONAL-Prototype/build/vst3_helpers/Relational/CMakeFiles/vst3_helper.dir
+/Users/babyonk1/Desktop/ExtasisRecords/RELATIONAL-Prototype/build/vst3_helpers/Relational/CMakeFiles/edit_cache.dir
+/Users/babyonk1/Desktop/ExtasisRecords/RELATIONAL-Prototype/build/vst3_helpers/Relational/CMakeFiles/rebuild_cache.dir
