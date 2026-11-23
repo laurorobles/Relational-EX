@@ -1,34 +1,48 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(RelationalEX VERSION 0.3.1 LANGUAGES C CXX)
+project(RelationalEX VERSION 0.8.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(JUCE_ROOT "$ENV{HOME}/JUCE")
+# --- JUCE ------------------------------------------------------------------
+# Resolution order: -DJUCE_DIR=<path>  ->  ~/JUCE  ->  FetchContent (pinned tag).
+option(RELATIONAL_COPY_PLUGIN "Copy the built VST3 to the user plug-in folder" ${APPLE})
+
+set(JUCE_ROOT "")
 if (DEFINED JUCE_DIR AND NOT JUCE_DIR STREQUAL "")
     set(JUCE_ROOT "${JUCE_DIR}")
+elseif (EXISTS "$ENV{HOME}/JUCE/CMakeLists.txt")
+    set(JUCE_ROOT "$ENV{HOME}/JUCE")
 endif()
 
-if (NOT EXISTS "${JUCE_ROOT}/CMakeLists.txt")
-    message(FATAL_ERROR "JUCE was not found at: ${JUCE_ROOT}. Set JUCE_DIR to your JUCE checkout.")
+if (JUCE_ROOT)
+    if (NOT EXISTS "${JUCE_ROOT}/CMakeLists.txt")
+        message(FATAL_ERROR "JUCE was not found at: ${JUCE_ROOT}")
+    endif()
+    add_subdirectory("${JUCE_ROOT}" JUCE)
+else()
+    include(FetchContent)
+    FetchContent_Declare(JUCE
+        GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+        GIT_TAG 9.0.1
+        GIT_SHALLOW TRUE)
+    FetchContent_MakeAvailable(JUCE)
 endif()
-
-add_subdirectory("${JUCE_ROOT}" JUCE)
 
 juce_add_plugin(RelationalEX
-    COMPANY_NAME "LAO"
-    BUNDLE_ID "com.lao.relationalex"
+    COMPANY_NAME "Extasis Records"
+    BUNDLE_ID "com.extasisrecords.relationalex"
     IS_SYNTH TRUE
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    COPY_PLUGIN_AFTER_BUILD TRUE
-    VST3_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST3"
-    PLUGIN_MANUFACTURER_CODE LaRo
-    PLUGIN_CODE Rlt2
+    COPY_PLUGIN_AFTER_BUILD ${RELATIONAL_COPY_PLUGIN}
+    VST3_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST3/Extasis Records"
+    PLUGIN_MANUFACTURER_CODE LAOR
+    PLUGIN_CODE RLX2
     FORMATS VST3 Standalone
     PRODUCT_NAME "Relational EX"
     PLUGIN_NAME "Relational EX"
@@ -85,13 +99,8 @@ target_link_libraries(RelationalEX PRIVATE
 )
 
 target_compile_options(RelationalEX PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>:-Wall;-Wextra;-Wpedantic>
+    $<$<COMPILE_LANGUAGE:CXX>:-Wall;-Wextra>
 )
-
-# Reproducible developer install for macOS. JUCE's COPY_PLUGIN_AFTER_BUILD is
-# still enabled above; this explicit target documents the intended destination
-# and gives build_and_install.sh a deterministic path to verify.
-set(RELATIONAL_EX_VST3_USER_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST3")
 
 # The MTS-ESP macOS dynamic library is loaded from /Library/Application Support/MTS-ESP.
 # Standalone development builds therefore opt into Apple's library-validation exception.

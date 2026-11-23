@@ -18,6 +18,12 @@ struct FactoryPreset {
     int tuningDivisions = 12;
     int steps = 16;
     int pulses = 8;
+
+    int rhythmCycle = 13;
+    int pitchCycle = 7;
+    int fmCycle = 5;
+    int tuningCycle = 11;
+    int motionCycle = 17;
 };
 
 class PresetLibrary {

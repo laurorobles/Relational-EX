@@ -1,403 +1,256 @@
-# Relational EX — User Manual
+# RELATIONAL EX — MANUAL
+## v0.8 Manual
 
-## 1. Overview
+**Extasis Records**  
+*coded by @laurorobles*
 
-Relational EX is an experimental instrument built around relationships between **frequency, rhythm, spectrum and motion**. It is not designed as a conventional subtractive synthesizer. The important question is not only “what note is this?” but “what relationships define this sound right now?”
+Relational EX is an experimental instrument built around relationships between pitch, tuning, rhythm, spectrum and time.
 
-The interface is intentionally modular. Every major area is bounded, aligned to a common grid, and given a functional role. Empty space is minimized without crowding controls. All interface text and help is in English.
+### 0. QUICK START
 
----
+1. Play with the on-screen keyboard, your computer keyboard (Standalone) or MIDI.
+2. Press play on the sequencer; drag event dots **up/down** to change their pitch (horizontal movement does not matter).
+3. Hover any control: every control has a tooltip describing exactly what it does.
+4. Turn up `RELATION DEPTH`, open `RELATIONS` and edit the 5×5 matrix to couple Pitch, Time, FM, Resonance and Tuning.
+5. Pick a `SCALE` + `ROOT` to quantize to a musical scale, or leave it on `OFF (FREE)` for microtonal/chaotic pitch.
+6. `MODE` switches POLY (8 voices) / MONO LEGATO (single voice with `GLIDE`). `LFO >` chooses what the LFO modulates.
 
-## 2. Quick start
+Parameter ranges and defaults: see [PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md).
 
-1. Open the Standalone or load the VST3.
-2. Play a MIDI note.
-3. Move **FM Ratio** from `1.000` to a non-integer value such as `1.414` or `1.618`.
-4. Increase **FM Index** slowly.
-5. Move a point in the **Frequency Field**.
-6. Switch the sequencer between **FIELD**, **GRID** and **RADIAL**.
-7. Press **EUCLID** and experiment with Steps/Pulses.
-8. Open **PRESETS** and use a factory patch as a starting hypothesis.
+### 1. RELATIONAL SEQUENCER
 
-A useful way to learn the instrument is to change one relational dimension at a time: tuning first, then FM ratio, then FM index, then temporal structure.
+The sequencer is an event system rather than a conventional row of fixed notes. Each event can contain:
 
----
+- position
+- pitch
+- velocity
+- probability
+- FM ratio
+- FM index
+- tuning offset
+- timing offset
 
-## 3. Header and global controls
+The base event pattern and the five relational phase cycles are separate concepts.
 
-### RELATIONAL EX
+### 2. FIVE RELATIONAL CYCLES
 
-The product identity. The secondary line describes the four core domains: frequency, rhythm, spectrum and motion.
+The sequencer exposes five independent phase lengths:
 
-### PRESETS
+| Domain | Meaning |
+|---|---|
+| RHYTHM | Determines which rhythmic event slot is active |
+| PITCH | Selects the pitch source position |
+| FM | Selects the spectral/FM source position |
+| TUNING | Selects the tuning-offset source position |
+| MOTION | Selects timing/motion source position |
 
-Opens the factory preset browser. Presets are grouped conceptually rather than by conventional categories such as bass/lead/pad. Each preset is a starting point for exploring a relationship.
+Example:
 
-### TUNING
+`RHYTHM 13 / PITCH 7 / FM 5 / TUNING 11 / MOTION 17`
 
-Opens built-in equal temperament choices and entries discovered by the local scale catalog. A tuning changes the frequency field that the synthesis engine uses to resolve MIDI notes.
+The system does not collapse these values to the event-list length. A cycle length is a phase period.
 
-### LOAD .SCL
+### 3. RELATIONAL PERIOD
 
-Loads a Scala `.scl` file from disk. The loaded scale becomes the current internal tuning. The project deliberately treats Scala as an exchange format, not as a hard-coded list of “exotic” scales.
+The UI reports the least common multiple of the five cycle lengths.
 
-### FIELD / GRID / RADIAL
+For the example above:
 
-Cycles the three sequencer representations. The data are shared: changing the view never creates a second sequence.
+`LCM(13, 7, 5, 11, 17) = 85085`
 
-### PLAY / STOP
+This is the number of phase advances required before all five cycle phases return to their initial alignment.
 
-Starts or stops the internal sequencer clock. Incoming MIDI notes can still be played while the sequencer is stopped.
+The displayed period is therefore a structural measurement of the sequence system, not a claim about the literal number of unique audio events.
 
-### EUCLID
+### 4. CYCLE STRIPS
 
-Rebuilds the current event activation pattern using the current Steps and Pulses relationship. It preserves the event data structure around the activation mask.
+The five compact horizontal tracks in the sequencer are both visualization and controls.
 
-### STATUS
+The horizontal position selects a cycle length from 1 to 32.
 
-Shows the active preset, tuning source or error state. It is intentionally textual rather than decorative.
+Each track shows:
 
----
+- its name;
+- its current length;
+- discrete reference ticks;
+- a length marker;
+- the current phase.
 
-## 4. Frequency Field
+Drag horizontally to change a cycle.
 
-The Frequency Field is the main tuning laboratory. Horizontal placement corresponds to scale degree. Vertical placement represents the interval in cents relative to the current tuning system.
+### 5. FIELD / GRID / RADIAL
 
-A point can be selected and dragged vertically. The current prototype maps vertical movement to approximately four cents per screen pixel, with the actual ratio stored continuously.
+**FIELD** shows time horizontally and pitch vertically.
 
-### Why it is not a piano roll
+**GRID** emphasizes discrete event positions and active/inactive state.
 
-The field does not assume 12 semitones. A 12-TET tuning produces a familiar ladder, while 31-TET, just-intonation-like data or a custom Scala scale can create different geometries.
+**RADIAL** represents event position as phase around a cycle.
 
-### Editing a point
+The three modes operate on the same event data.
 
-1. Move the pointer near a point.
-2. Press and hold.
-3. Drag vertically.
-4. Release to keep the edit.
+### 6. EUCLID
 
-The frequency snapshot used by the audio thread is updated through a double-buffered publish operation, so the audio path does not read a partially edited tuning table.
+EUCLID distributes active pulses across the current base sequence.
 
-### Tuning terminology
+It is a pattern generator, not the identity of the instrument.
 
-- **Ratio**: frequency divided by the reference frequency.
-- **Cents**: logarithmic interval where 1200 cents represent the configured period of 2:1.
-- **Period**: the ratio that repeats the tuning system. Usually `2/1`, but Scala scales may define other periods.
+After generation, the events can still be shaped by the five relational cycles.
 
----
+### 7. GENERATIVE PRESET
 
-## 5. Tuning systems
+Holding Shift while using the sequence generation control invokes the experimental generative preset.
 
-### TET / equal divisions
+The preset demonstrates:
 
-Built-in equal divisions currently cover one to 53 steps over the configured period. More divisions produce a denser field of possible pitches.
+- 11 pulses over 16 steps;
+- non-integer FM ratios;
+- moving FM index;
+- probability;
+- tuning offsets;
+- timing offsets;
+- divergent relational cycles.
 
-The frequency relationship is:
+### 8. TUNING
 
-`frequency = rootFrequency × period^(degree / divisions)`
+Relational EX separates tuning structure from keyboard mapping.
 
-### Scala `.scl`
+Supported architecture includes:
 
-Scala files may specify intervals in cents or ratios. Relational EX reads the interval list and uses the final interval as the period.
+- equal temperaments;
+- Scala;
+- KBM;
+- MIDI Tuning Standard;
+- MTS-ESP.
 
-### KBM
+The Frequency Field represents interval relationships visually and permits direct editing.
 
-Keyboard Mapping (`.kbm`) describes how MIDI keys correspond to scale degrees. KBM support is currently a development subset and should be treated as partial until the full mapping semantics are validated against a larger corpus.
+### 9. RELATIONAL MATRIX
 
-### MIDI Tuning Standard
+The Relational Coupling Matrix contains five domains:
 
-Incoming supported MTS SysEx messages can update the local tuning table. The local table is used when no MTS-ESP master is connected.
+`PITCH / TIME / FM / RESONANCE / TUNING`
 
-### MTS-ESP
+Columns are sources. Rows are destinations.
 
-When an MTS-ESP master is present, the engine can query retuned frequencies by MIDI note and channel. The official client model recommends checking note filtering at Note On and, where practical, querying continuously while a note is held.
+A link can have negative or positive influence.
 
-The current project isolates MTS-ESP from the rest of the tuning engine so the instrument remains functional without the external library.
+The matrix is published to the realtime engine through an immutable snapshot.
 
----
+### 10. SOUND ENGINE
 
-## 6. FM Engine
+The core synthesis path combines:
 
-### FM RATIO
+`TUNING → FM → INHARMONIC RESONANCE`
 
-Defines the relationship between modulator and carrier.
+with modulation from:
 
-- `1.000`: same frequency.
-- `2.000`: simple harmonic relationship.
-- `1.5`: harmonic relationship with a different overtone alignment.
-- `1.414`: irrational relationship approximating square-root-of-two behavior.
-- `1.618`: golden-ratio relationship.
-- values that are not simple ratios generally produce increasingly complex sideband structures.
+`LFO + CHAOS + RELATIONAL ENGINE`
 
-The parameter is deliberately continuous. There is no “musical ratio whitelist.”
+The intent is not to emulate a specific conventional synthesizer architecture. The goal is to make relationships between domains audible.
 
-### FM INDEX
+### 11. MIDI / TEST INPUT
 
-Controls modulation depth. Raising the index usually increases the number and strength of sidebands. Small changes can move a sound from a recognizable tone toward a dense or metallic spectrum.
+The Standalone provides:
 
-### FM FEEDBACK
+- external MIDI;
+- on-screen keyboard;
+- computer keyboard entry;
+- MIDI monitor.
 
-Feeds a portion of the oscillator output back into its own phase. Low values add edge and complexity. High values can make the oscillator aggressive or unstable.
+The monitor reports note, velocity, gate and frequency.
 
----
+### 12. TOOLtips
 
-## 7. Inharmonic Resonator
+Interactive controls provide English explanations on mouse-over.
 
-Relational EX contains a lightweight six-mode resonator. Its mode ratios are intentionally synthetic rather than a physical model of one named instrument.
+The explanations should describe:
 
-### INHARMONICITY
+1. what the control changes;
+2. its role in the larger system;
+3. the musical consequence of increasing or decreasing it.
 
-Interpolates the modal ratios away from simple harmonic multiples. Low values keep the body relatively coherent; high values emphasize metallic and object-like relationships.
+### 13. SAVED STATE
 
-### RESONANCE
+Plugin state stores the synthesis parameters, tuning state, event sequence and relational matrix.
 
-Controls the amount of resonator excitation mixed with the FM voice. A high value can turn a simple FM tone into something closer to an abstract struck or ringing object.
+Relational cycle lengths are stored with the sequencer state.
 
----
+Older states without cycle metadata fall back to:
 
-## 8. Motion layer
+`RHYTHM = sequence length`
 
-### TUNING DRIFT
+`PITCH = 7`
 
-Adds tiny random movement around the resolved tuning. The range is intentionally small because the desired effect is a changing frequency relationship rather than a traditional vibrato.
+`FM = 5`
 
-### LFO RATE
+`TUNING = 11`
 
-Sets the periodic motion rate.
+`MOTION = 17`
 
-### LFO AMOUNT
+### 14. DESIGN PRINCIPLE
 
-Controls how strongly the LFO influences the phase/frequency path. The current scale is intentionally wider than a conventional fine-vibrato control because the same source can be pushed into experimental territories.
+The primary scope guardrail remains:
 
-### CHAOS
+> Does this feature deepen the relationship between pitch, tuning, rhythm, spectrum or time?
 
-Uses a deterministic logistic-map source. Unlike unconstrained random noise, the source has internal structure and is repeatable from its initial condition. Higher amounts reduce obvious periodicity while preserving a bounded output.
+Features that do not strengthen that relationship should normally remain outside Relational EX.
 
----
+### 15. CREDITS
 
-## 9. Relational Sequencer
+Relational EX  
+Extasis Records  
+coded by @laurorobles
 
-The sequencer is interactive. An event is a relational object, not merely an on/off step.
 
-Each event can contain:
+## v0.7 — RELATIONAL MOTION
 
-- **Position** — normalized cycle position.
-- **Pitch** — displacement from the sequence reference.
-- **Ratio** — event-level spectral/FM relationship.
-- **Velocity** — event amplitude.
-- **Probability** — chance to trigger each cycle.
-- **FM Index** — event-specific FM depth.
-- **Tuning Offset** — additional cents after tuning resolution.
-- **Timing Offset** — displacement from nominal event timing.
-- **Active** — event participation.
+The sequencer now treats RHYTHM, PITCH, FM, TUNING and MOTION as independent phase domains. Their lengths can differ intentionally.
 
-### Steps
+### RELATIONAL PERIOD
 
-Defines the total cycle length. The current implementation supports one to 32 events. The original design deliberately avoids assuming that 32 steps are always musically necessary.
+The RELATIONAL PERIOD is the least common multiple of the five cycle lengths. It describes the full structural recurrence of the phase system. A very large value is expected when the selected periods are mutually prime. It does not mean that the plugin literally stores that many events.
 
-### Pulses
+### PHASE
 
-Defines how many active hits a Euclidean pattern distributes over the current cycle.
+The PHASE indicator shows the normalized position inside the current combined relational period. It wraps from 99% back to 0%.
 
-### Probability
+### TO ALIGN
 
-At `1.0`, the event always triggers. At `0.5`, each cycle has an independent 50% chance of triggering.
+TO ALIGN reports the number of phase advances remaining until all five cycle phases return to their initial alignment.
 
-### Timing Offset
+### COMPLEXITY
 
-Shifts the event around its nominal position. This is intended for microtiming and future groove/phase studies.
+COMPLEXITY is a descriptive logarithmic metric of the selected cycle lengths. It is intended as a visual indication of how much periodic structure has been introduced, not as an audio parameter.
 
----
+### CYCLE STRIPS
 
-## 11. Relational Engine
+Each strip is both a phase-length control and a live phase display. Click/drag horizontally to select a value from 1 to 32. The illuminated phase marker shows the current position of that domain.
 
-The Relational Engine is what makes the instrument more than a synthesizer with microtuning. It links five domains: **Pitch, Time, FM, Resonance and Tuning**.
+### RELATIONAL AUDIO BEHAVIOR
 
-### Relation Depth
+The global sequencer phase now enters the Relational Engine's TIME domain. PITCH and TUNING phase also become normalized relation sources. The FM destination can continuously bend the active voice's ratio and index, while TUNING can create a bounded continuous pitch displacement.
 
-Controls how strongly the built-in relationship network influences the synthesis path. At `0`, the domains behave mostly independently. At higher values, changes in motion, tuning and spectral state create secondary consequences.
+This is the intended design philosophy of Relational EX: a control can alter the relationship between domains rather than simply acting as an isolated knob.
 
-The current development build uses a sparse fixed relationship topology. A future editor will expose selected connections visually.
+## Sequencer interaction
 
-### Interpreting the relationships
+The Relational Sequencer is divided into two interactive layers and one status layer.
 
-- **Pitch → FM**: pitch movement can alter perceived spectral complexity.
-- **Pitch → Resonance**: pitch movement can alter the amount of modal emphasis.
-- **Time → FM**: temporal position can slightly change spectral behavior.
-- **FM → Resonance**: denser FM can excite more body-like energy.
-- **Tuning → Pitch**: changing the tuning field can feed back into pitch movement.
-- **Tuning → FM**: microtonal changes can alter spectral relationships.
+### Phase tracks
 
-The goal is not randomization. The relationships are bounded and deterministic so that complex behavior remains musically inspectable.
+The five phase tracks are editable directly. Click or drag horizontally over RHYTHM, PITCH, FM, TUNING, or MOTION to choose a cycle length from 1 to 32. These are cycle lengths, not necessarily the number of stored events.
 
-## 12. Preset design principles
+### Event canvas
 
-Factory presets are demonstrations of relationships. Start with a preset, identify the dominant relationship, then change one domain. For example:
+The large lower canvas is always interactive. There is no requirement to click directly on a dot. In FIELD and RADIAL views, clicking anywhere in the canvas selects the nearest event so the user can immediately drag it. In GRID view, clicking a cell toggles its active state.
 
-- `PRIME LATTICE` — tuning relationships and moderate resonant coupling.
-- `FRACTURED GLASS` — non-integer FM relationships and dense sidebands.
-- `PHASE RAIN` — motion and temporal instability.
-- `RATIONAL GHOST` — simple ratios with subtle tuning structure.
-- `ALIEN MARIMBA` — inharmonic resonance and modal color.
-- `BROKEN GENERATOR` — extreme tuning, FM and deterministic chaos.
+FIELD: horizontal movement changes event time; vertical movement changes pitch.
 
-Presets are intentionally not organized as “bass / lead / pad”. They are conceptual experiments.
+GRID: clicking toggles the selected step; vertical dragging changes pitch.
 
-## 10. Sequencer views
+RADIAL: angular movement changes event phase around the cycle.
 
-### FIELD
+Shift-click toggles an event in FIELD and RADIAL views.
 
-Horizontal axis: time. Vertical axis: relative pitch. Event position, pitch and velocity become immediately visible as geometry. This is the primary “musical analysis” view.
+The bottom status strip is intentionally non-editable. It reports interaction instructions and the currently selected event so it cannot be confused with the event canvas.
 
-### GRID
-
-A discrete view for quickly enabling/disabling events. It is useful when working rhythmically and when a clear step relationship matters more than continuous geometry.
-
-### RADIAL
-
-Maps time onto angle. Events orbit around the cycle. This is designed to make cyclic and rotational relationships legible rather than simply decorate a familiar step grid.
-
----
-
-## 13. Presets
-
-Factory presets are deliberately named as conceptual prompts. They should encourage the user to interrogate the synthesis system.
-
-### INIT / PURE
-
-A clean baseline. Best for learning individual controls.
-
-### PRIME LATTICE
-
-31-TET, moderate/high FM complexity and an altered ratio field. Start here for pitch relationships that feel coherent but not chromatically familiar.
-
-### FRACTURED GLASS
-
-Higher FM index, feedback and inharmonicity. A gateway into brittle and metallic timbres.
-
-### PHASE RAIN
-
-Motion-led. Listen to the pitch relationships changing rather than treating the sound as a static oscillator.
-
-### RATIONAL GHOST
-
-A restrained ratio-focused patch. Use it to hear how simple relationships can still create a characteristic FM spectrum.
-
-### TIDAL METAL
-
-Resonator-forward. Long notes reveal the modal decay structure.
-
-### PAPER CIRCUIT
-
-A middle-ground percussive/digital patch.
-
-### NULL MACHINE
-
-Extreme. Useful for exposing how dense ratios and high modulation can destabilize pitch perception.
-
-### SOFT COLLISION
-
-Low-intensity movement and relatively stable spectrum.
-
-### ALIEN MARIMBA
-
-A deliberately synthetic modal prompt inspired by the idea of wooden resonance; it is not a physical marimba model.
-
-### MICRO POLAROID
-
-A narrow microtonal environment for exploring small interval changes.
-
-### BROKEN GENERATOR
-
-High-complexity FM and chaos-oriented exploration.
-
----
-
-## 14. Recommended workflows
-
-### Workflow A — Build a tuning
-
-Start at `12-TET`. Change to `31-TET`. Move one Frequency Field point. Compare the sound before and after. Load a Scala scale and repeat.
-
-### Workflow B — Build a timbre from a ratio
-
-Hold one note. Set FM Ratio to `1.000`. Raise FM Index until the spectrum becomes audible. Then try `1.414`, `1.618`, `2.173` and `3.141`. Listen for the point where pitch identity weakens and spectral identity becomes dominant.
-
-### Workflow C — Make a relational rhythm
-
-Choose 13 Steps and 5 Pulses. Press EUCLID. Switch to Radial. Then change event positions manually in Field view. Return to Grid and disable one event. The sequence remains the same underlying dataset.
-
-### Workflow D — Combine domains
-
-Choose 31-TET, an irrational FM ratio and a 13/5 rhythm. This produces a clear separation between familiar rhythmic periodicity and unusual pitch/spectral relationships.
-
----
-
-## 15. Tooltips
-
-Every interactive control provides English mouse-over help. Tooltips are designed to explain effect and musical consequence. They are part of the product design system, not an optional documentation layer.
-
----
-
-## 16. Saving and state
-
-The plugin stores APVTS parameters and development-state information for the relational sequence. State serialization will continue to evolve as the tuning database and multi-lane sequencing model become more sophisticated.
-
----
-
-## 17. Current limitations
-
-- Full KBM semantics are still being validated.
-- MTS SysEx local support is not yet a complete implementation of every MTS message family.
-- MTS-ESP requires validation against a current installed library.
-- Multi-lane polymetric sequencing is part of the intended architecture but not yet the full UI.
-- Distribution signing/notarization is not yet part of the development build.
-
-These limitations are documented rather than hidden so presets and future work remain traceable to the actual implementation.
-
-## 18. Detailed control reference
-
-### Output Level
-Controls the final output gain after voice summing and soft saturation. Keep lower values when using many simultaneous voices or high FM feedback.
-
-### Tuning Divisions
-Selects the number of equal divisions of the current period for internal TET tuning. This is a fast exploration control; loading Scala replaces the current interval list with the imported scale.
-
-### Root Frequency
-Defines the reference frequency of the internal tuning system. MIDI note 69 maps to this reference in the default 12-TET interpretation.
-
-### Sequence Steps
-Sets the number of events in the cycle, from 1 to 32. Short sequences are useful for strong phase repetition; longer sequences expose slower relationships between pitch and rhythm.
-
-### Sequence Pulses
-Controls the number of active events when EUCLID is pressed. Pulses are constrained to the current number of steps.
-
-### Relation Depth
-Controls the strength of the internal five-domain coupling network. At zero, the network contributes nothing. Increasing it makes changes in tuning, motion and spectral state influence other domains.
-
-### LFO Rate
-Sets the frequency of the periodic motion source. Slow values produce gradual evolution; faster values can become audible as vibrato-like movement.
-
-### LFO Amount
-Scales the LFO contribution to the relational motion state. At zero the LFO is running internally but contributes no modulation.
-
-### Chaos
-Controls the amount of deterministic nonlinear motion. The source is bounded and repeatable; it is intentionally different from sample-by-sample random noise.
-
-### Event Position
-In Field view, drag an event horizontally to change its normalized cycle position. The current prototype stores the position continuously.
-
-### Event Pitch
-In Field view, drag an event vertically to change its pitch displacement. The event remains a relational pitch offset rather than becoming a fixed named note.
-
-### Event Probability
-Controls whether an event is allowed to trigger on each cycle. Probability is evaluated independently per cycle using the sequencer's deterministic random source.
-
-### Event Ratio / Event FM Index
-These override the voice's base FM relationship for that event. They are intended to create spectral patterns that differ from the pitch pattern.
-
-### Event Tuning Offset
-Adds cents after the current tuning resolution. This allows small microtonal deviations without changing the underlying scale.
-
-### Event Timing Offset
-Stored as part of the event model for microtiming and future sample-accurate event scheduling. The current development build does not yet apply it as a separate scheduling offset.

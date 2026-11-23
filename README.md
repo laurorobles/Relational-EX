@@ -1,140 +1,69 @@
 # Relational EX
 
-Relational EX is an experimental software instrument for exploring non-standard relationships between **frequency, rhythm, spectrum and motion**.
+**An experimental FM instrument where pitch, rhythm, spectrum and tuning are coupled to each other.**
 
-The public plugin identity is **Relational EX**. The final product identity can still evolve, but the repository and plugin metadata use this name consistently.
+`v0.8.0 (alpha)` · macOS (VST3 + Standalone) · Open source under **AGPL-3.0**
 
-## Status
+*Extasis Records — coded by [@laurorobles](https://github.com/laurorobles)*
 
-**Development / alpha — v0.3.2-dev.** The project is actively evolving. The architecture is intended to become a production-quality macOS VST3 + Standalone instrument, but the current branch is not a release build.
+Relational EX is not a general-purpose synth workstation. It explores one idea: instead of
+treating pitch, time, FM, resonance and tuning as independent knobs, they are connected by a
+signed 5×5 **relation matrix**, driven by five independent, non-aligned **cycles**
+(Rhythm / Pitch / FM / Tuning / Motion). The result is slowly evolving, polymetric material that
+never quite repeats.
 
-## Formats
+## Features
 
-- VST3
-- Standalone
-- macOS ARM64 CI target
+- **8-voice FM** with continuous ratio, index and feedback, plus a six-mode inharmonic resonator
+- **Relational Engine**: editable 5×5 coupling matrix between Pitch, Time, FM, Resonance, Tuning
+- **Relational Sequencer**: up to 32 events, Euclidean generator, per-event pitch / ratio /
+  velocity / probability / FM index / tuning offset / timing offset; Field, Grid and Radial views
+- **Five independent cycles** (1–32) that phase against each other
+- **Scale quantization (optional)**: 10 scales + root note, or `OFF (FREE)` for microtonal freedom
+- **Mono legato + glide** mode, or 8-voice polyphony
+- **ADSR, low-pass filter**, LFO with selectable target (Relations / FM Ratio / FM Index / Cutoff), deterministic chaos
+- **Tuning**: 1–53 EDO, Scala `.scl` files, MIDI Tuning Standard SysEx, MTS-ESP client (loaded at runtime if installed)
+- **MPE-style per-channel pitch bend**
+- Factory presets, full state recall, tooltips on every control
 
-GitHub provides standard hosted ARM64 macOS runners including `macos-14`, `macos-15`, and `macos-latest`; the repository CI uses `macos-14` for a stable Apple Silicon target.
+## Install
 
-## Core concept
+Download the latest build from the [Releases](../../releases) page, then copy:
 
-Relational EX does not treat microtuning as a cosmetic note-scale feature. Frequency relationships are part of the synthesis engine, and the sequencer stores events as relational objects containing pitch, timing, ratio, probability, velocity, FM behavior and tuning offsets.
+| Format | Destination |
+|---|---|
+| VST3 | `~/Library/Audio/Plug-Ins/VST3/` |
+| Standalone | `/Applications/` |
 
-The same sequence can be inspected through multiple representations:
+Builds are not notarized yet. If macOS blocks the plugin: right-click → Open, or run
+`xattr -dr com.apple.quarantine "Relational EX.vst3"`.
 
-- **FIELD** — continuous event space
-- **GRID** — temporal/event matrix
-- **RADIAL** — cyclic phase geometry
+## Build from source
 
-## Current systems
-
-### Synthesis
-
-- 8-voice polyphonic FM engine
-- continuous carrier/modulator ratios
-- FM index and feedback
-- six-mode inharmonic resonator
-- deterministic chaos modulation core
-- LFO modulation core
-- tuning drift
-- 5-domain Relational Engine coupling pitch, time, FM, resonance and tuning
-
-### Tuning
-
-- 1–53 TET
-- Scala `.scl`
-- initial KBM parser
-- MIDI Tuning Standard parsing
-- MTS-ESP client interoperability layer
-- continuous MTS-ESP retuning path
-- internal tuning snapshot for realtime-safe access
-
-MTS-ESP integration follows the official client model: register a client, query note frequencies using MIDI note/channel, optionally filter unmapped notes, parse incoming MTS SysEx, and deregister on shutdown.
-
-### Sequencing
-
-- up to 32 events
-- Euclidean pattern generation
-- per-event pitch
-- ratio
-- velocity
-- probability
-- FM index
-- tuning offset
-- timing offset
-- interactive Field / Grid / Radial views
-- double-buffered realtime snapshot
-
-### Presets
-
-Factory presets are intentionally exploratory starting hypotheses rather than generic genre presets. The current set includes:
-
-`PRIME LATTICE`, `FRACTURED GLASS`, `PHASE RAIN`, `RATIONAL GHOST`, `TIDAL METAL`, `PAPER CIRCUIT`, `NULL MACHINE`, `ALIEN MARIMBA`, `MICRO POLAROID`, `BROKEN GENERATOR` and others.
-
-## Build
-
-Requirements:
-
-- macOS
-- Xcode Command Line Tools
-- CMake 3.22+
-- JUCE checkout at `~/JUCE` by default
+Requirements: macOS, Xcode Command Line Tools, CMake ≥ 3.22. JUCE 9.0.1 is fetched automatically;
+to use a local checkout pass `-DJUCE_DIR=/path/to/JUCE` (or place it at `~/JUCE`).
 
 ```bash
-./PREBUILD_CHECK.sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release --parallel "$(sysctl -n hw.logicalcpu)"
-./build_and_install.sh
+./scripts/build.sh            # configure + build Release
+./scripts/build.sh --install  # also copy VST3 to ~/Library/Audio/Plug-Ins/VST3/Extasis Records
 ```
 
-The intended user VST3 location is:
-
-```text
-~/Library/Audio/Plug-Ins/VST3/Relational EX.vst3
-```
-
-## GitHub synchronization
-
-The repository includes a safe sync script that never force-pushes:
-
-```bash
-./BUILD_RELATIONAL_EX.sh
-./SYNC_GITHUB.sh
-```
-
-The default remote is:
-
-```text
-git@github.com:laurorobles/Relational-EX.git
-```
-
-If the remote history has diverged, the script stops rather than overwriting commits.
+Details: [Docs/BUILD_GUIDE.md](Docs/BUILD_GUIDE.md).
 
 ## Documentation
 
-See `Docs/` for:
+| | |
+|---|---|
+| [Manual](Docs/MANUAL.md) | How to play and what every control does |
+| [Parameter reference](Docs/PARAMETER_REFERENCE.md) | IDs, ranges, defaults |
+| [Architecture](Docs/ARCHITECTURE.md) · [DSP model](Docs/DSP_MODEL.md) · [Relational engine](Docs/RELATIONAL_ENGINE.md) | How it works |
+| [Scope](Docs/SCOPE.md) · [Roadmap](Docs/ROADMAP.md) | What this project is (and isn't) |
+| [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Third-party notices](Docs/THIRD_PARTY_NOTICES.md) | Project meta |
 
-- technical specification
-- user manual
-- parameter reference
-- DSP model
-- architecture
-- UI specification
-- research notes
-- references and bibliography
-- database plan
-- implementation status
-- build status
-- test plan
-- release checklist
-- decision log
-- third-party notices
-- repository metadata
+## License
 
-## Relational Engine
+Relational EX is free software released under the **GNU Affero General Public License v3.0**
+(see [LICENSE](LICENSE)). It is built with [JUCE](https://juce.com), used under its AGPLv3 option.
+If you redistribute modified binaries you must publish the corresponding source under the same terms.
 
-The current engine uses a compact 5×5 relationship model rather than a large generic modulation matrix. Its purpose is to make existing domains interact: tuning can influence pitch/spectrum, time can influence spectral state, and resonance can feed back into FM behavior. The user-facing matrix editor is planned, but the coupling model already exists in the audio path. See `Docs/RELATIONAL_ENGINE.md`.
-
-## Scope protection
-
-Relational EX is not intended to become a general-purpose subtractive synthesizer or a copy of Wilsonic, Buchla hardware, Autechre, Aphex Twin or any other existing instrument. Those are references for concepts and techniques, not a specification to imitate.
+© 2026 Lauro Robles / Extasis Records.

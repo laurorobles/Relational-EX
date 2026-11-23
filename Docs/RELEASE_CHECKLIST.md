@@ -29,7 +29,6 @@
 - [ ] MANUAL updated
 - [ ] PARAMETER_REFERENCE updated
 - [ ] TECHNICAL_SPEC updated
-- [ ] IMPLEMENTATION_STATUS updated
 - [ ] CHANGELOG updated
 - [ ] DECISION_LOG updated
 - [ ] third-party notices checked

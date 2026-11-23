@@ -14,6 +14,7 @@ public:
         x_ = 3.99 * x_ * (1.0 - x_);
         return static_cast<float>((x_ * 2.0 - 1.0) * amount_);
     }
+    float value() const noexcept { return static_cast<float>((x_ * 2.0 - 1.0) * amount_); }
 private:
     double x_ = 0.3127;
     double amount_ = 0.0;

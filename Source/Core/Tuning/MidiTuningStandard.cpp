@@ -43,12 +43,31 @@ bool MidiTuningStandard::parseSysEx(const uint8_t* d, size_t size)
         return true;
     }
 
-    // Scale/Octave tuning, one-byte cent format: store as offsets from 12-TET.
-    if (d[4] == 0x08 && size >= 24) {
-        const int channel = d[5] & 0x0F;
-        (void) channel;
-        // Detailed variants differ in payload layout; leave the table untouched here.
-        return false;
+    // Scale/Octave tuning (0x08 = 1-byte, 0x09 = 2-byte format).
+    // The last 13 bytes are always the 12 tuning offsets (plus F7).
+    if ((d[4] == 0x08 || d[4] == 0x09) && size >= 18) {
+        const bool isTwoByte = (d[4] == 0x09);
+        const size_t tuningStart = isTwoByte ? (size - 25) : (size - 13);
+        
+        for (int note = 0; note < 128; ++note) {
+            int pitchClass = note % 12;
+            double centsOffset = 0.0;
+            
+            if (isTwoByte) {
+                const uint32_t msb = d[tuningStart + (pitchClass * 2)];
+                const uint32_t lsb = d[tuningStart + (pitchClass * 2) + 1];
+                const int combined = (static_cast<int>(msb) << 7) | lsb;
+                centsOffset = (combined - 8192) / 100.0;
+            } else {
+                centsOffset = static_cast<int>(d[tuningStart + pitchClass]) - 64;
+            }
+            
+            frequencies_[static_cast<size_t>(note)] = 440.0 * std::pow(2.0, ((note - 69) + (centsOffset / 100.0)) / 12.0);
+        }
+        
+        dirty_ = true;
+        hasTuning_ = true;
+        return true;
     }
 
     return false;

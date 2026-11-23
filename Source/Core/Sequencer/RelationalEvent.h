@@ -11,6 +11,7 @@ struct RelationalEvent {
     double fmIndex = 2.0;
     double tuningOffsetCents = 0.0;
     double timingOffset = 0.0;     // percentage of step
+    double duration = 0.5;         // duration in fraction of a step
     bool active = true;
 };
 

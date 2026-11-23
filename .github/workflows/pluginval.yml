@@ -1,0 +1,27 @@
+name: pluginval
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build VST3
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRELATIONAL_COPY_PLUGIN=OFF
+          cmake --build build --config Release --parallel
+
+      - name: Download pluginval
+        run: |
+          curl -L "https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip" -o pluginval.zip
+          unzip -q pluginval.zip
+
+      - name: Run pluginval
+        run: |
+          VST3="$(find build -type d -name 'Relational EX.vst3' -print -quit)"
+          ./pluginval.app/Contents/MacOS/pluginval --strictness-level 5 --validate-in-process --validate "$VST3"

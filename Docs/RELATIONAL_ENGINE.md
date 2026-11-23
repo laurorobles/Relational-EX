@@ -1,44 +1,33 @@
-# Relational Engine
+# Relational EX — Relational Engine
 
-The Relational Engine is the conceptual center of Relational EX. It couples five normalized domains:
+## Purpose
 
-| Dimension | Meaning |
-|---|---|
-| Pitch | pitch displacement / pitch topology |
-| Time | temporal phase / event position |
-| FM | spectral modulation state |
-| Resonance | inharmonic body / modal energy |
-| Tuning | microtonal displacement / tuning motion |
+The Relational Engine is the identity layer of Relational EX. It is not a general-purpose modulation matrix. It models bounded coupling between five domains:
 
-The current implementation is a deliberately small 5×5 matrix with sparse default couplings. It is not exposed as a full user-editable modulation matrix yet.
+- Pitch
+- Time
+- FM
+- Resonance
+- Tuning
 
-## Why a matrix?
+## Matrix
 
-A conventional synthesizer often treats controls independently. Relational EX instead asks what happens when a change in one domain produces a controlled consequence in another domain.
+The development build exposes a 5×5 matrix. Columns are sources; rows are destinations. Each off-diagonal cell is a signed coupling from -1.0 to +1.0.
 
-For example:
+Positive coupling pushes the destination in the same normalized direction as the source. Negative coupling inverts the relationship. `Relation Depth` scales the complete matrix response at runtime.
 
-`Tuning → Pitch → FM → Resonance`
+## Realtime model
 
-can produce a timbral change without requiring a separate envelope or effect.
+The editor owns an editable matrix. A published immutable snapshot is atomically made available to the audio thread. The audio thread copies the matrix once per audio block and performs all sample-level transforms against that local copy. No audio-thread allocation or UI-container access is required.
 
-## Current default couplings
+## Default relationships
 
-The development defaults include weak relationships such as:
+The initial matrix contains deliberately sparse relationships between pitch, FM, resonance and tuning, with smaller time relationships. This makes the engine audible without requiring an enormous control surface.
 
-- Pitch → FM
-- Pitch → Resonance
-- Pitch → Tuning
-- Time → FM
-- Time → Resonance
-- FM → Resonance
-- FM → Tuning
-- Resonance → FM
-- Tuning → Pitch
-- Tuning → FM
+## UI
 
-The depth parameter scales these relationships globally.
+The `RELATIONS` control opens an overlay editor. Drag vertically inside a cell to change its amount. The display is intentionally compact: coupling strength is encoded by fill magnitude and sign, while the numeric percentage remains visible for precision.
 
-## Future UI
+## Persistence
 
-The intended UI is a compact relationship matrix/graph rather than a large conventional modulation table. It should make the topology visible without turning the instrument into a spreadsheet.
+The complete 5×5 matrix is serialized into the plugin state under `RELATIONS/CELL` nodes. Future releases may move selected relationships into automatable parameters; that change must preserve the 5-domain model.

@@ -1,49 +1,23 @@
 # Relational EX — Roadmap
 
-## Phase 0 — Buildable foundation
+## Done (≤ v0.8.0)
+- JUCE/CMake project, VST3 + Standalone, GitHub CI
+- Editable 5×5 relation matrix with persistence and realtime-safe snapshot
+- Five independent relational cycles, relational phase, 32-event sequencer (Field/Grid/Radial)
+- Scala / MTS SysEx tuning, 1–53 EDO, runtime MTS-ESP client
+- ADSR, filter, LFO routing, mono legato + glide, optional scale quantization
+- Host transport start sync, MPE-style per-channel pitch bend, tooltips
 
-- JUCE CMake project
-- VST3 + Standalone
-- deterministic macOS build scripts
-- user VST3 installation
-- core tests
+## Next (toward 1.0)
+- Validation: pluginval at high strictness, Intel + Apple Silicon (universal binary)
+- Code signing + notarization, installer
+- MTS-ESP validation against the official library; KBM integration; continuous retuning option
+- State migration between versions
+- Windows / Linux builds (contributions welcome)
+- Unit tests for sequencer, scale snapping and tuning
 
-## Phase 1 — Tuning laboratory
-
-- complete Frequency Field editing
-- period/generator model
-- morph between tunings
-- Scala + KBM conformance
-- full tuning browser
-
-## Phase 2 — Relational synthesis
-
-- per-event ratio routing
-- spectral morphing
-- partial bank editor
-- beating/cluster generator
-- audio-rate modulation matrix
-
-## Phase 3 — Relational sequencer
-
-- multi-length tracks
-- polymetric transport
-- field/grid/radial interaction parity
-- pattern transformations
-- reversible randomization
-
-## Phase 4 — Integration
-
-- official MTS-ESP client source
-- complete MTS SysEx support
-- continuous retuning option
-- host transport sync
-- MPE-aware channel handling
-
-## Phase 5 — Release engineering
-
-- plugin validation matrix
-- signing/notarization
-- state migration
-- installer/distribution
-- production documentation
+## Ideas (must respect [SCOPE.md](SCOPE.md))
+- Spectral morphing and partial-bank experiments
+- Transformation operators and reversible randomization for the sequencer
+- Event trajectory / duration model
+- Host-synced sequencer position (PPQ-locked)
