@@ -3,6 +3,12 @@
 #include <algorithm>
 
 #if defined(_WIN32)
+ #ifndef NOMINMAX
+  #define NOMINMAX
+ #endif
+ #ifndef WIN32_LEAN_AND_MEAN
+  #define WIN32_LEAN_AND_MEAN
+ #endif
  #include <windows.h>
 #else
  #include <dlfcn.h>
@@ -24,11 +30,12 @@ Fn loadSymbol(void* library, const char* name) noexcept
 void* openLibrary()
 {
 #if defined(_WIN32)
-    return reinterpret_cast<void*>(LoadLibraryA("MTS-ESP.dll"));
+    return reinterpret_cast<void*>(LoadLibraryA("C:\\ProgramData\\MTS-ESP\\libMTS.dll"));
 #else
     if (auto* h = dlopen("/Library/Application Support/MTS-ESP/libMTS.dylib", RTLD_NOW | RTLD_LOCAL)) return h;
     if (auto* h = dlopen("/usr/local/lib/libMTS.dylib", RTLD_NOW | RTLD_LOCAL)) return h;
     if (auto* h = dlopen("/usr/local/lib/libMTS.so", RTLD_NOW | RTLD_LOCAL)) return h;
+    if (auto* h = dlopen("/usr/lib/libMTS.so", RTLD_NOW | RTLD_LOCAL)) return h;
     return nullptr;
 #endif
 }

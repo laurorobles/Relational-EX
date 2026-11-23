@@ -3,9 +3,12 @@
 All notable changes to Relational EX. Format based on [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/) (pre-1.0: minor bumps may change behavior).
 
-## [0.8.0] — Unreleased (first public release)
+## [0.8.0] — 2026-11-23
+
+First public release.
 
 ### Added
+- **Windows and Linux builds** (VST3 + Standalone) alongside macOS (universal arm64 + x86_64), built and packaged by CI.
 - **Scale quantization** (optional): 10 scales (chromatic, major, minor, harmonic minor, dorian,
   phrygian, lydian, mixolydian, pentatonic major/minor) + root note. `OFF (FREE)` keeps full microtonal behavior.
   Applies to sequencer pitches and to relational tuning drift (diatonic stepping).
@@ -15,6 +18,7 @@ versions follow [SemVer](https://semver.org/) (pre-1.0: minor bumps may change b
 - Tooltips on every control, including detailed sequencer help.
 - Discreet credit in the UI. All-notes-off / all-sound-off MIDI handling.
 - `LICENSE` (AGPL-3.0), `scripts/build.sh`, `scripts/package_release.sh`.
+- Bundled scales are now found in every platform layout; MTS-ESP library lookup for Windows/Linux.
 
 ### Changed
 - Sequencer: dragging events horizontally no longer resets them; only vertical value matters.

@@ -1281,12 +1281,13 @@ void RelationalEXProcessor::scanScaleDatabase()
             juce::File::currentExecutableFile)
             .getParentDirectory();
 
-    roots.emplace_back(
-        exeDir
-            .getChildFile(
-                "Resources/Scales")
-            .getFullPathName()
-            .toStdString());
+    // Bundled scales, per platform layout:
+    //  macOS bundle:   <bundle>/Contents/Resources/Scales   (binary in Contents/MacOS)
+    //  Win/Linux VST3: <bundle>/Contents/Resources/Scales   (binary in Contents/<arch>)
+    //  Standalone:     <exe dir>/Resources/Scales
+    for (const char* rel : { "../Resources/Scales", "Resources/Scales", "Scales" })
+        roots.emplace_back(
+            exeDir.getChildFile(rel).getFullPathName().toStdString());
 
     roots.emplace_back(
         juce::File::getSpecialLocation(

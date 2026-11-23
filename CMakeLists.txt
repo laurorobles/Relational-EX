@@ -8,7 +8,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # --- JUCE ------------------------------------------------------------------
 # Resolution order: -DJUCE_DIR=<path>  ->  ~/JUCE  ->  FetchContent (pinned tag).
-option(RELATIONAL_COPY_PLUGIN "Copy the built VST3 to the user plug-in folder" ${APPLE})
+if (APPLE)
+    set(_relational_copy_default ON)
+else()
+    set(_relational_copy_default OFF)
+endif()
+option(RELATIONAL_COPY_PLUGIN "Copy the built VST3 to the user plug-in folder after building (macOS)" ${_relational_copy_default})
 
 set(JUCE_ROOT "")
 if (DEFINED JUCE_DIR AND NOT JUCE_DIR STREQUAL "")
@@ -98,27 +103,39 @@ target_link_libraries(RelationalEX PRIVATE
     juce::juce_gui_extra
 )
 
-target_compile_options(RelationalEX PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>:-Wall;-Wextra>
-)
+if (MSVC)
+    target_compile_options(RelationalEX PRIVATE /W3 /utf-8)
+else()
+    target_compile_options(RelationalEX PRIVATE -Wall -Wextra)
+endif()
 
-# The MTS-ESP macOS dynamic library is loaded from /Library/Application Support/MTS-ESP.
-# Standalone development builds therefore opt into Apple's library-validation exception.
+# --- Platform specifics ------------------------------------------------------
+# MTS-ESP's macOS library is loaded at runtime from /Library/Application Support/MTS-ESP, so the
+# Standalone opts into Apple's library-validation exception.
 if (APPLE AND TARGET RelationalEX_Standalone)
     set_target_properties(RelationalEX_Standalone PROPERTIES
         XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_SOURCE_DIR}/Resources/RelationalEX.entitlements"
     )
 endif()
 
-# Copy human-readable scale resources into packaged macOS bundles at build time.
+# Ship the bundled .scl scales next to each binary (see scanScaleDatabase() for lookup order):
+#   macOS bundles  -> Contents/Resources/Scales
+#   Win/Linux VST3 -> Contents/Resources/Scales   (binary lives in Contents/<arch>)
+#   Standalone     -> <exe dir>/Resources/Scales  (Win/Linux)
+set(RELATIONAL_SCALES_SRC "${CMAKE_SOURCE_DIR}/Resources/Scales")
+
+function(relational_copy_scales target dest_expr)
+    if (TARGET ${target})
+        add_custom_command(TARGET ${target} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${dest_expr}"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${RELATIONAL_SCALES_SRC}" "${dest_expr}")
+    endif()
+endfunction()
+
 if (APPLE)
-    set(RELATIONAL_EX_SCALE_SOURCE "${CMAKE_SOURCE_DIR}/Resources/Scales")
-    add_custom_command(TARGET RelationalEX_Standalone POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:RelationalEX_Standalone>/Contents/Resources/Scales"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${RELATIONAL_EX_SCALE_SOURCE}" "$<TARGET_BUNDLE_DIR:RelationalEX_Standalone>/Contents/Resources/Scales"
-    )
-    add_custom_command(TARGET RelationalEX_VST3 POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:RelationalEX_VST3>/Contents/Resources/Scales"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${RELATIONAL_EX_SCALE_SOURCE}" "$<TARGET_BUNDLE_DIR:RelationalEX_VST3>/Contents/Resources/Scales"
-    )
+    relational_copy_scales(RelationalEX_Standalone "$<TARGET_BUNDLE_DIR:RelationalEX_Standalone>/Contents/Resources/Scales")
+    relational_copy_scales(RelationalEX_VST3 "$<TARGET_BUNDLE_DIR:RelationalEX_VST3>/Contents/Resources/Scales")
+else()
+    relational_copy_scales(RelationalEX_Standalone "$<TARGET_FILE_DIR:RelationalEX_Standalone>/Resources/Scales")
+    relational_copy_scales(RelationalEX_VST3 "$<TARGET_FILE_DIR:RelationalEX_VST3>/../Resources/Scales")
 endif()

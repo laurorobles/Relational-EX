@@ -2,7 +2,7 @@
 
 **An experimental FM instrument where pitch, rhythm, spectrum and tuning are coupled to each other.**
 
-`v0.8.0 (alpha)` · macOS (VST3 + Standalone) · Open source under **AGPL-3.0**
+`v0.8.0 (alpha)` · macOS · Windows · Linux (VST3 + Standalone) · Open source under **AGPL-3.0**
 
 *Extasis Records — coded by [@laurorobles](https://github.com/laurorobles)*
 
@@ -28,24 +28,29 @@ never quite repeats.
 
 ## Install
 
-Download the latest build from the [Releases](../../releases) page, then copy:
+Download the zip for your system from the [Releases](../../releases) page and copy:
 
-| Format | Destination |
-|---|---|
-| VST3 | `~/Library/Audio/Plug-Ins/VST3/` |
-| Standalone | `/Applications/` |
+| OS | VST3 → | Standalone |
+|---|---|---|
+| macOS (Intel + Apple Silicon) | `~/Library/Audio/Plug-Ins/VST3/` | `Relational EX.app` → `/Applications/` |
+| Windows 10/11 x64 | `C:\Program Files\Common Files\VST3\` | `Standalone\Relational EX.exe` (keep the `Resources` folder beside it) |
+| Linux x86_64 | `~/.vst3/` | `Standalone/Relational EX` (keep `Resources/` beside it) |
 
-Builds are not notarized yet. If macOS blocks the plugin: right-click → Open, or run
-`xattr -dr com.apple.quarantine "Relational EX.vst3"`.
+Builds are **not code-signed**:
+- macOS: right-click → Open, or `xattr -dr com.apple.quarantine "Relational EX.vst3"`.
+- Windows: SmartScreen may warn → *More info → Run anyway*.
+- Linux needs ALSA/JACK and X11 (standard on desktop distros).
+
+Verify downloads with the `.sha256` file published next to each zip.
 
 ## Build from source
 
-Requirements: macOS, Xcode Command Line Tools, CMake ≥ 3.22. JUCE 9.0.1 is fetched automatically;
+Requirements: CMake ≥ 3.22 and a C++17 compiler (Xcode CLT / Visual Studio 2022 / GCC ≥ 9). Linux also needs the JUCE system packages listed in the [build guide](Docs/BUILD_GUIDE.md). JUCE 9.0.1 is fetched automatically;
 to use a local checkout pass `-DJUCE_DIR=/path/to/JUCE` (or place it at `~/JUCE`).
 
 ```bash
 ./scripts/build.sh            # configure + build Release
-./scripts/build.sh --install  # also copy VST3 to ~/Library/Audio/Plug-Ins/VST3/Extasis Records
+./scripts/build.sh --install  # macOS: also copy VST3 to ~/Library/Audio/Plug-Ins/VST3/Extasis Records
 ```
 
 Details: [Docs/BUILD_GUIDE.md](Docs/BUILD_GUIDE.md).

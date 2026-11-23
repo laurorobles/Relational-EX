@@ -6,18 +6,45 @@ on:
     tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  macos:
-    runs-on: macos-latest
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (universal)
+            os: macos-latest
+            cmake_args: -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+          - name: Windows
+            os: windows-latest
+            cmake_args: ""
+          - name: Linux
+            os: ubuntu-22.04
+            cmake_args: ""
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libjack-jackd2-dev ladspa-sdk \
+            libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev \
+            libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libgl1-mesa-dev mesa-common-dev
+
       - name: Configure (JUCE 9.0.1 is fetched by CMake)
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRELATIONAL_COPY_PLUGIN=OFF
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRELATIONAL_COPY_PLUGIN=OFF ${{ matrix.cmake_args }}
 
       - name: Build
         run: cmake --build build --config Release --parallel
@@ -27,13 +54,27 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: RelationalEX-macOS
+          name: RelationalEX-${{ runner.os }}
           path: dist/*.zip*
 
-      - name: Attach to GitHub Release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
-          files: dist/*.zip*
-          generate_release_notes: true
-          prerelease: true
+          path: dist
+          merge-multiple: true
+      - name: Extract release notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## / {f=0} f' CHANGELOG.md > NOTES.md
+          [ -s NOTES.md ] || echo "Relational EX $GITHUB_REF_NAME" > NOTES.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          body_path: NOTES.md
+          prerelease: ${{ contains(github.ref_name, '-') || startsWith(github.ref_name, 'v0.') }}
