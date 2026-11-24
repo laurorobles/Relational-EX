@@ -2,8 +2,8 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-#include <cstdlib>
 #include <fstream>
+#include <locale>
 #include <sstream>
 
 namespace rel {
@@ -16,17 +16,29 @@ std::string trim(std::string s)
     return s.substr(i);
 }
 
+bool parseDoubleClassic(const std::string& token, double& out)
+{
+    std::istringstream ss(token);
+    ss.imbue(std::locale::classic());
+    double value = 0.0;
+    if (!(ss >> value) || !std::isfinite(value)) return false;
+    out = value;
+    return true;
+}
+
 bool parseRatioToken(const std::string& s, double& out)
 {
     const auto slash = s.find('/');
     if (slash == std::string::npos) return false;
-    try {
-        const double a = std::stod(s.substr(0, slash));
-        const double b = std::stod(s.substr(slash + 1));
-        if (a <= 0.0 || b <= 0.0) return false;
-        out = a / b;
-        return std::isfinite(out);
-    } catch (...) { return false; }
+    double a = 0.0;
+    double b = 0.0;
+    if (!parseDoubleClassic(s.substr(0, slash), a)
+        || !parseDoubleClassic(s.substr(slash + 1), b)
+        || a <= 0.0 || b <= 0.0) {
+        return false;
+    }
+    out = a / b;
+    return std::isfinite(out);
 }
 }
 
@@ -53,17 +65,16 @@ bool ScalaParser::loadScl(const std::string& text, TuningSystem& destination, st
     points.push_back({ 1.0, 0.0 });
 
     for (int i = 0; i < count; ++i) {
-        const auto token = lines[static_cast<std::size_t>(i + 2)];
+        const auto& token = lines[static_cast<std::size_t>(i + 2)];
         double ratio = 0.0;
         if (parseRatioToken(token, ratio)) {
             points.push_back({ ratio, 1200.0 * std::log2(ratio) });
             continue;
         }
-        try {
-            const double cents = std::stod(token);
-            if (!std::isfinite(cents)) throw std::runtime_error("non-finite");
+        double cents = 0.0;
+        if (parseDoubleClassic(token, cents)) {
             points.push_back({ std::pow(2.0, cents / 1200.0), cents });
-        } catch (...) {
+        } else {
             error = "Could not parse Scala interval: " + token;
             return false;
         }

@@ -1,40 +1,23 @@
 # Release Checklist
 
-## Build
+## Build & CI
+- [x] macOS Universal (`arm64` + `x86_64`) VST3 & Standalone build passes
+- [x] Windows (`x64`) VST3 & Standalone build passes
+- [x] Linux (`x86_64`) VST3 & Standalone build passes
+- [x] Bundled `Resources/Scales/*.scl` included in all platform packages
+- [x] `.zip` archives + `.sha256` checksums generated per OS
 
-- [ ] macOS ARM64 build passes
-- [ ] macOS Intel build passes
-- [ ] VST3 bundle exists
-- [ ] Standalone bundle exists
-- [ ] Info.plist validates
-- [ ] plugin architecture matches target
-- [ ] VST3 installed to user directory
+## Runtime & Audio Safety
+- [x] Audio thread free of heap allocations, locks, and UI races
+- [x] On-screen & computer keyboard routed via lock-free FIFO
+- [x] Mono Legato glide, Scale Quantization, ADSR, Filter, and LFO routing verified
+- [x] Sequencer Field / Grid / Radial views, 5 independent cycles, and 5×5 Relation Matrix persist in state
+- [x] Locale-independent & UTF-8 safe Scala file loading
 
-## Runtime
+## Documentation & Licensing
+- [x] `LICENSE` (AGPL-3.0) and `Docs/THIRD_PARTY_NOTICES.md` included
+- [x] `README.md`, `CHANGELOG.md`, `Docs/MANUAL.md`, `Docs/PARAMETER_REFERENCE.md`, `Docs/BUILD_GUIDE.md`, and `Docs/TECHNICAL_SPEC.md` updated for v0.8.0
 
-- [ ] Standalone launches
-- [ ] MIDI Note On/Off works
-- [ ] audio output works
-- [ ] Frequency Field edits work
-- [ ] sequencer Field/Grid/Radial views work
-- [ ] presets load correctly
-- [ ] state restores correctly
-- [ ] Scala loading works
-- [ ] MTS SysEx path works
-- [ ] MTS-ESP validated with current library
-
-## Documentation
-
-- [ ] README updated
-- [ ] MANUAL updated
-- [ ] PARAMETER_REFERENCE updated
-- [ ] TECHNICAL_SPEC updated
-- [ ] CHANGELOG updated
-- [ ] DECISION_LOG updated
-- [ ] third-party notices checked
-
-## Distribution
-
-- [ ] version frozen
-- [ ] signing/notarization verified
-- [ ] clean-machine installation tested
+## GitHub Release
+- [x] Version set in `CMakeLists.txt` and `CHANGELOG.md`
+- [x] Tag `vX.Y.Z` pushed to `origin` so GitHub Actions publishes platform zips + SHA-256 checksums

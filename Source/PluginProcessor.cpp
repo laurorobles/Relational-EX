@@ -187,20 +187,22 @@ RelationalEXProcessor::createParameterLayout()
     return { p.begin(), p.end() };
 }
 
-void RelationalEXProcessor::prepareToPlay(double sr, int)
+void RelationalEXProcessor::prepareToPlay(double sr, int samplesPerBlock)
 {
     sampleRate_ = std::max(1000.0, sr);
     sequenceSampleCounter_ = 0.0;
+    const auto maxBlock = static_cast<juce::uint32>(std::max(1, samplesPerBlock));
 
     for (auto& voice : voices_)
     {
         voice.fm.prepare(sampleRate_);
         voice.resonator.prepare(sampleRate_);
         voice.adsr.setSampleRate(sampleRate_);
-        
-        juce::dsp::ProcessSpec spec { sampleRate_, 1024, 1 }; // Rough max block size
+
+        juce::dsp::ProcessSpec spec { sampleRate_, maxBlock, 1 };
         voice.filter.prepare(spec);
         voice.filter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
+        voice.filter.reset();
         
         voice.note = -1;
         voice.active = false;
@@ -536,6 +538,7 @@ void RelationalEXProcessor::triggerVoice(
         target->resonator.setInharmonicity(param(*this, "inharmonicity", 0.25f));
         target->resonator.setDamping(0.9935);
         target->resonator.reset();
+        target->filter.reset();
 
         const float resonance = param(*this, "resonance", 0.0f);
         if (resonance > 0.001f)
@@ -799,6 +802,10 @@ void RelationalEXProcessor::processBlock(
     relations_.copyMatrixForAudio(
         relationMatrix);
 
+    const int numChannels = buffer.getNumChannels();
+    float* outL = numChannels > 0 ? buffer.getWritePointer(0) : nullptr;
+    float* outR = numChannels > 1 ? buffer.getWritePointer(1) : nullptr;
+
     for (int sample = 0;
          sample < buffer.getNumSamples();
          ++sample)
@@ -977,8 +984,12 @@ void RelationalEXProcessor::processBlock(
             * level
             * 0.7f;
 
-        buffer.setSample(0, sample, output);
-        buffer.setSample(1, sample, output);
+        if (outL != nullptr)
+            outL[sample] = output;
+        if (outR != nullptr)
+            outR[sample] = output;
+        for (int ch = 2; ch < numChannels; ++ch)
+            buffer.setSample(ch, sample, output);
 
         const float visual =
             juce::jlimit(
@@ -1286,16 +1297,18 @@ void RelationalEXProcessor::scanScaleDatabase()
     //  Win/Linux VST3: <bundle>/Contents/Resources/Scales   (binary in Contents/<arch>)
     //  Standalone:     <exe dir>/Resources/Scales
     for (const char* rel : { "../Resources/Scales", "Resources/Scales", "Scales" })
-        roots.emplace_back(
-            exeDir.getChildFile(rel).getFullPathName().toStdString());
+    {
+        const auto utf8 = exeDir.getChildFile(rel).getFullPathName().toStdString();
+        roots.emplace_back(std::filesystem::u8path(utf8));
+    }
 
-    roots.emplace_back(
+    const auto userScalesUtf8 =
         juce::File::getSpecialLocation(
             juce::File::userApplicationDataDirectory)
-            .getChildFile(
-                "RELATIONAL EX/Scales")
+            .getChildFile("RELATIONAL EX/Scales")
             .getFullPathName()
-            .toStdString());
+            .toStdString();
+    roots.emplace_back(std::filesystem::u8path(userScalesUtf8));
 
     scaleCatalog_.scan(roots);
 }
@@ -1304,10 +1317,17 @@ bool RelationalEXProcessor::loadScalaFile(
     const juce::File& file,
     juce::String& error)
 {
-    std::string parserError;
+    if (!file.existsAsFile())
+    {
+        error = "Scala file not found: " + file.getFullPathName();
+        return false;
+    }
 
-    if (!rel::ScalaParser::loadSclFile(
-            file.getFullPathName().toStdString(),
+    std::string parserError;
+    const auto content = file.loadFileAsString().toStdString();
+
+    if (!rel::ScalaParser::loadScl(
+            content,
             tuning,
             parserError))
     {

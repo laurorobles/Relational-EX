@@ -202,7 +202,7 @@ Extasis Records
 coded by @laurorobles
 
 
-## v0.7 — RELATIONAL MOTION
+## RELATIONAL MOTION & PHASE ALIGNMENT
 
 The sequencer now treats RHYTHM, PITCH, FM, TUNING and MOTION as independent phase domains. Their lengths can differ intentionally.
 

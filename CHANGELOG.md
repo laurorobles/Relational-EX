@@ -33,6 +33,7 @@ First public release.
 - Per-event tuning offsets (cents) from the sequencer were lost after the first audio block.
 - **Thread safety:** on-screen / computer-keyboard notes were triggering voices from the UI thread. They are now
   queued through a lock-free FIFO and consumed on the audio thread.
+- **Cross-platform & host safety:** mono/multi-channel output buffer safety, locale-independent Scala/KBM decimal parsing, and UTF-8 file path handling on Windows/Linux/macOS.
 
 ### Removed
 - Obsolete versioned status docs, installer/sync helper scripts, build artefacts previously tracked in git,

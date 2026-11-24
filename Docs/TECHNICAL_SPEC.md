@@ -1,38 +1,35 @@
-# Relational EX Technical Specification
+# Relational EX — Technical Specification
 
-## Product
+**Version:** 0.8.0 · **License:** AGPL-3.0
 
-Name: Relational EX
-Formats: VST3, Standalone
-Platform: macOS first
-Architecture: C++17 + JUCE + isolated DSP modules
+## Product metadata
+
+- **Product / Plugin name:** `Relational EX`
+- **Company:** `Extasis Records` (*coded by @laurorobles*)
+- **Bundle ID:** `com.extasisrecords.relationalex`
+- **Manufacturer code:** `LAOR`
+- **Plugin code:** `RLX2`
+- **Formats:** VST3, Standalone
+- **Platforms:** macOS 11+ (Universal: `arm64` + `x86_64`), Windows 10/11 (`x64`), Linux (`x86_64`)
+- **Toolchain:** C++17 + CMake ≥ 3.22 + JUCE 9.0.1
 
 ## Realtime safety
 
-The audio thread must not allocate memory, touch the filesystem, mutate UI state, or iterate over UI-owned containers. Sequencer and tuning data are published through double-buffered snapshots.
+The audio thread (`processBlock`) never allocates heap memory, acquires locks, touches the filesystem, or mutates UI-owned containers:
+- **Tuning:** immutable 128-note `std::shared_ptr<const TuningSnapshot>` published via atomic store/load.
+- **Sequencer & Relation Matrix:** double-buffered snapshots swapped atomically from the UI thread.
+- **On-screen / computer keyboard:** note-on/off events are pushed into a lock-free `juce::AbstractFifo` on the UI thread and drained at the start of `processBlock`.
+- **Scale quantization:** zero-allocation `constexpr` scale degree tables.
 
-## State
+## State serialization
 
-APVTS stores host-automatable scalar parameters. ValueTree state stores sequence structure and custom tuning information as development support evolves.
+- `juce::AudioProcessorValueTreeState` (APVTS) stores all host-automatable parameters with stable IDs (see [PARAMETER_REFERENCE.md](PARAMETER_REFERENCE.md)).
+- Child `ValueTree` nodes persist custom tuning points (`TUNING`), the 32-event sequence and independent cycle lengths (`SEQUENCE`), and the 5×5 coupling matrix (`RELATIONS`).
 
-## Tuning interoperability
+## Tuning interoperability & priority
 
-Priority order:
+1. **MTS-ESP master** (loaded dynamically at runtime via `MTSClientBridge`: `libMTS.dylib` on macOS, `libMTS.dll` on Windows, `libMTS.so` on Linux).
+2. **MIDI Tuning Standard (MTS)** SysEx table when received locally.
+3. **Internal Relational tuning** (1–53 EDO, Frequency Field edits, or locale-independent Scala `.scl` files).
 
-1. MTS-ESP master when connected.
-2. Local MIDI Tuning Standard table when a valid local MTS tuning has been received.
-3. Internal Relational tuning snapshot.
-
-## Plugin metadata
-
-Company: LAO
-Bundle ID: `com.lao.relationalex`
-Manufacturer code: `LaRo`
-Plugin code: `Rlt2`
-Product name: `Relational EX`
-
-Before release, these identifiers must be frozen and checked for global uniqueness.
-
-## Relational Engine
-
-The realtime synthesis path includes a compact five-domain relationship model. It is deterministic, bounded and allocation-free during processing. The current matrix is fixed in the development build; future versions may expose selected relationships through the UI without changing the underlying dimensional model.
+Optional **Scale Quantization** (`scaleType` + `rootNote`) snaps sequencer pitches and diatonic relational tuning shifts to 10 musical scales while leaving `OFF (FREE)` completely unquantized.

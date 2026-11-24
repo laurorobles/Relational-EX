@@ -3,49 +3,30 @@
 ## Layers
 
 ```text
-Host / Standalone
+Host DAW (VST3) / Standalone App (macOS · Windows · Linux)
         ↓
 PluginProcessor / PluginEditor
         ↓
-Application state + APVTS
+APVTS Parameters + ValueTree State (Tuning, Sequence, Relations)
         ↓
-Relational control model
+Lock-Free Bridges (Atomic Snapshots + Double Buffers + AbstractFifo)
         ↓
-Tuning / Sequencer / Modulation
+Sequencer Cycles / Relational Matrix / Scale & Tuning Resolution
         ↓
-Voice / FM / Resonator
+8 Voices (FM + 6-Mode Resonator + ADSR + SVF TPT Filter)
         ↓
-Audio output
+Soft-Clipped Stereo / Mono-Safe Output
 ```
 
-## Core rule
+## Core realtime rules
 
-Realtime DSP must never depend on UI-owned mutable containers or filesystem operations.
+Realtime DSP (`processBlock`) never depends on UI-owned mutable containers, locks, heap allocations, or filesystem I/O:
+- **Tuning:** UI edits write into `tuningEditBuffer_`, update `TuningSystem`, and publish an immutable 128-note `TuningSnapshot` via `std::atomic_store_explicit`.
+- **Sequencer & Relations:** UI edits modify staging structures and publish complete snapshots to the audio thread.
+- **Test keyboard:** UI mouse/key events enqueue `TestEvent` structs into a 64-slot `juce::AbstractFifo` consumed on the audio thread.
 
-## Tuning
+## Cross-platform isolation
 
-UI-side tuning edits modify the edit model, then publish an immutable 128-note frequency snapshot by atomically switching between two completed buffers.
-
-## Sequencer
-
-UI-side event edits modify the edit vector, then publish a complete event-array snapshot through the same double-buffer pattern.
-
-## MTS
-
-MTS-ESP is isolated behind `MTSClientBridge`. When present, it can override local pitch resolution. Without an MTS-ESP master, internal Relational tuning remains the main source; a valid local MTS SysEx table can override it when present.
-
-## Presets
-
-Factory presets are code-defined development assets. Host state serialization is separate from the conceptual preset catalogue.
-
-## Database
-
-Scale discovery and synchronization are non-realtime operations. Runtime lookup is local.
-
-## UI
-
-Components consume snapshots or UI-safe models. They do not directly mutate realtime state without an explicit publish/commit boundary.
-
-## Relation Engine
-
-The Relation Engine is a bounded five-domain coupling stage between control interpretation and voice rendering. It consumes normalized pitch/time/FM/resonance/tuning states and returns bounded coupled values. It contains no filesystem, UI or allocation work on the realtime path.
+- `Source/Core/` is pure standard C++17 (no JUCE headers), keeping DSP, Scala/KBM parsing (classic `"C"` locale), tuning math, and relational sequencing portable across Clang, GCC, and MSVC.
+- `MTSClientBridge` dynamically loads the optional MTS-ESP shared library per OS (`dlopen` on macOS/Linux, `LoadLibraryA` on Windows) and falls back cleanly when absent.
+- `ScaleCatalog` scans bundled `Resources/Scales` and user application data directories using UTF-8 paths (`u8path` / `u8string`).

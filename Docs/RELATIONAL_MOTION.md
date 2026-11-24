@@ -1,8 +1,8 @@
-# Relational EX v0.7 — Relational Motion
+# Relational EX — Relational Motion
 
 ## Purpose
 
-v0.7 turns the five independent sequencer periods into a continuous relational motion layer.
+Relational Motion turns the five independent sequencer periods into a continuous modulation layer.
 
 ### Five domains
 - RHYTHM — event occurrence / base time
@@ -35,7 +35,7 @@ A sequencer advance captures the phase frame before advancing. The event resolve
 
 ## Scope decision
 
-v0.7 does not introduce a new oscillator family, sampler, granular engine, or effect suite. The goal is deeper interaction among existing domains.
+Relational EX does not introduce unrelated oscillator families, samplers, granular engines, or effect suites; the goal is deeper interaction among existing domains.
 
 **Extasis Records**  
 *coded by @laurorobles*

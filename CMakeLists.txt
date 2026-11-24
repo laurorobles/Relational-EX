@@ -36,6 +36,11 @@ else()
     FetchContent_MakeAvailable(JUCE)
 endif()
 
+set(_relational_vst3_copy_args "")
+if (APPLE)
+    set(_relational_vst3_copy_args VST3_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST3/Extasis Records")
+endif()
+
 juce_add_plugin(RelationalEX
     COMPANY_NAME "Extasis Records"
     BUNDLE_ID "com.extasisrecords.relationalex"
@@ -45,7 +50,7 @@ juce_add_plugin(RelationalEX
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
     COPY_PLUGIN_AFTER_BUILD ${RELATIONAL_COPY_PLUGIN}
-    VST3_COPY_DIR "$ENV{HOME}/Library/Audio/Plug-Ins/VST3/Extasis Records"
+    ${_relational_vst3_copy_args}
     PLUGIN_MANUFACTURER_CODE LAOR
     PLUGIN_CODE RLX2
     FORMATS VST3 Standalone
@@ -62,7 +67,6 @@ target_sources(RelationalEX PRIVATE
     Source/PluginEditor.h
 
     Source/Core/DSP/FMOscillator.h
-    Source/Core/DSP/SineOscillator.h
     Source/Core/DSP/ResonatorBank.h
 
     Source/Core/Tuning/TuningSystem.cpp
@@ -101,6 +105,7 @@ target_link_libraries(RelationalEX PRIVATE
     juce::juce_audio_utils
     juce::juce_dsp
     juce::juce_gui_extra
+    $<$<NOT:$<PLATFORM_ID:Windows>>:${CMAKE_DL_LIBS}>
 )
 
 if (MSVC)

@@ -2624,15 +2624,15 @@ void RelationalEXEditor::showTuningMenu()
             juce::String error;
 
             if (processor.loadScalaFile(
-                    juce::File(entries[static_cast<std::size_t>(index)].path),
+                    juce::File(juce::String::fromUTF8(entries[static_cast<std::size_t>(index)].path.c_str())),
                     error))
             {
                 tuningButton.setButtonText("SCALA");
 
                 statusLabel.setText(
                     "SCALA / "
-                        + juce::String(
-                            entries[static_cast<std::size_t>(index)].name),
+                        + juce::String::fromUTF8(
+                            entries[static_cast<std::size_t>(index)].name.c_str()),
                     juce::dontSendNotification);
             }
             else

@@ -1,21 +1,39 @@
-# DSP Model
+# Relational EX — DSP Model
 
 ## Signal path
 
-MIDI / Sequencer Event → Tuning Resolution → Voice Allocation → FM Oscillator → Optional Inharmonic Resonator → Voice Envelope → Soft Saturation → Output
+```text
+MIDI / Sequencer Event
+   ↓
+Scale Quantization (optional) & Tuning Resolution (MTS-ESP → MTS SysEx → Internal Snapshot)
+   ↓
+Voice Allocation (8-voice Poly or single-voice Mono Legato with exponential Glide)
+   ↓
+2-Op Continuous FM Oscillator (Ratio, Index, Feedback + Relational & LFO modulation)
+   ↓
+Optional 6-Mode Inharmonic Resonator
+   ↓
+Per-Voice ADSR Envelope
+   ↓
+Per-Voice SVF TPT Low-Pass Filter (20 Hz – 20 kHz, optional ±3 oct LFO mod)
+   ↓
+Voice Sum → Soft Saturation (tanh) → Master Level
+```
 
-## FM
+## FM Oscillator
 
-Carrier frequency is resolved from the active tuning system. The modulator frequency is `carrier × ratio`. FM index controls deviation depth; feedback feeds the oscillator output back into the phase path. Ratios are continuous and are intentionally not restricted to integer harmonic relationships.
+Carrier frequency is resolved from the active tuning system (plus per-event cents offset, MPE pitch bend, and optional exponential portamento in `MONO LEGATO` mode). Modulator frequency is `carrier × ratio`, smoothed per sample with one-pole filters. Ratios are continuous and intentionally unrestricted to integer multiples; feedback routes the oscillator output back into phase.
 
 ## Inharmonic Resonator
 
-The resonator uses six custom mode ratios. `Inharmonicity` interpolates their spacing away from harmonic integer multiples. This is an intentionally lightweight modal abstraction, not a physical model of a named instrument.
+Six modal bandpass/ringing stages whose partial ratios interpolate away from harmonic multiples according to `inharmonicity` (`0.0–1.0`), adding metallic or object-like body without imitating a fixed acoustic instrument.
 
-## Tuning
+## Envelope & Filter
 
-The realtime audio thread consumes an immutable 128-note frequency snapshot. UI-side tuning edits are written to the inactive snapshot and published with an atomic index swap. This avoids reading partially-written tuning tables from the realtime thread.
+Each voice runs an independent `juce::ADSR` (`envAttack`, `envDecay`, `envSustain`, `envRelease`) and a zero-delay feedback `juce::dsp::StateVariableTPTFilter` configured as a low-pass filter (`filterCutoff`). In `MONO LEGATO` mode, overlapping notes update the glide target without retriggering the ADSR, FM phase, resonator, or filter state.
 
-## Modulation
+## Modulation & Relational Coupling
 
-The development core includes an LFO and deterministic logistic-map chaos source. These are primitives for the future relational modulation matrix.
+- **LFO:** periodic modulator routable via `lfoTarget` to `RELATIONS` (default), `FM RATIO`, `FM INDEX`, or `CUTOFF`.
+- **Chaos:** deterministic nonlinear drift perturbing tuning phase, sequencer probability, and microtiming.
+- **Relational Engine:** slewed 5×5 signed coupling across Pitch, Time, FM, Resonance, and Tuning scaled by `relationDepth`.

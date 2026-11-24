@@ -8,7 +8,7 @@ The editor maps a chromatic row to notes starting at MIDI 60:
 
 `A W S E D F T G Y H U J K O L P ;`
 
-The mapping is polled at 60 Hz so note-off transitions are deterministic even though macOS keyboard callbacks vary by focus state.
+The mapping is polled at 60 Hz on the UI timer and forwarded through a lock-free FIFO to the audio thread so note-off transitions are deterministic across macOS, Windows, and Linux.
 
 ## MIDI monitor
 The header displays:
@@ -29,4 +29,4 @@ The frequency is derived from the active tuning path for monitored events.
 7. Open RELATIONS, modify a non-diagonal link, close/reopen the editor, and save/restore plugin state.
 8. Cycle FIELD / GRID / RADIAL and verify all views manipulate the same event set.
 9. Load factory presets and verify the monitored tuning/audio state changes.
-10. Inspect `~/Library/Audio/Plug-Ins/VST3/Relational EX.vst3` after installation.
+10. Inspect the installed VST3 (`~/Library/Audio/Plug-Ins/VST3/` on macOS, `C:\Program Files\Common Files\VST3\` on Windows, `~/.vst3/` on Linux).

@@ -3,6 +3,7 @@
 #include <cctype>
 #include <cmath>
 #include <fstream>
+#include <locale>
 #include <sstream>
 
 namespace rel {
@@ -17,6 +18,14 @@ std::vector<std::string> contentLines(const std::string& text) {
     while (std::getline(in, line)) { line = trim(line); if (!line.empty() && line[0] != '!') out.push_back(line); }
     return out;
 }
+bool parseDoubleClassic(const std::string& s, double& out) {
+    std::istringstream ss(s);
+    ss.imbue(std::locale::classic());
+    double v = 0.0;
+    if (!(ss >> v) || !std::isfinite(v)) return false;
+    out = v;
+    return true;
+}
 }
 
 bool KbmMapping::loadText(const std::string& text, std::string& error)
@@ -29,7 +38,7 @@ bool KbmMapping::loadText(const std::string& text, std::string& error)
         lastNote_ = std::stoi(lines[2]);
         middleNote_ = std::stoi(lines[3]);
         referenceNote_ = std::stoi(lines[4]);
-        referenceFrequency_ = std::stod(lines[5]);
+        if (!parseDoubleClassic(lines[5], referenceFrequency_)) { error = "Invalid KBM reference frequency."; return false; }
         referenceDegree_ = std::stoi(lines[6]);
         formalOctave_ = std::stoi(lines[7]);
     } catch (...) { error = "Invalid KBM header."; return false; }

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The v0.5 sequencer treats rhythm, pitch, FM, tuning and motion as independent periodic dimensions. The goal is not generic polymeter; it is to make the interaction between musical domains audible.
+The sequencer treats rhythm, pitch, FM, tuning and motion as independent periodic dimensions. The goal is not generic polymeter; it is to make the interaction between musical domains audible.
 
 Default factory cycle set:
 
