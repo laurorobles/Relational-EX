@@ -47,7 +47,14 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRELATIONAL_COPY_PLUGIN=OFF ${{ matrix.cmake_args }}
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: |
+          set -o pipefail
+          cmake --build build --config Release --parallel 2>&1 | tee build.log || {
+            grep -E "error|Error|undefined reference" build.log | head -15 | while IFS= read -r line; do
+              echo "::error::${line:0:400}"
+            done
+            exit 1
+          }
 
       - name: Package
         run: ./scripts/package_release.sh
